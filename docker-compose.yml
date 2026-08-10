@@ -1,0 +1,85 @@
+# Ambiente completo de desenvolvimento/execucao: API + PostgreSQL + Redis.
+# Subir tudo:            docker compose up -d --build
+# Rodar as migrations:   docker compose exec api npm run migration:run
+# Popular dados base:    docker compose exec api npm run seed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ods_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-ods}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ods_secret}
+      POSTGRES_DB: ${DB_DATABASE:-ods_quiz}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-ods} -d ${DB_DATABASE:-ods_quiz}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ods_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ods_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ods_net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ods_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: ${API_PREFIX:-api/v1}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-ods}
+      DB_PASSWORD: ${DB_PASSWORD:-ods_secret}
+      DB_DATABASE: ${DB_DATABASE:-ods_quiz}
+      DB_SYNCHRONIZE: 'false'
+      DB_LOGGING: 'false'
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      GAME_SESSION_TTL: ${GAME_SESSION_TTL:-7200}
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      GAME_DEFAULT_POWERUPS: ${GAME_DEFAULT_POWERUPS:-3}
+    ports:
+      - '${PORT:-3000}:3000'
+    networks:
+      - ods_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ods_net:
+    driver: bridge

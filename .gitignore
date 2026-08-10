@@ -1,0 +1,32 @@
+# Dependencias
+/node_modules
+/dist
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variaveis de ambiente (segredos nunca vao para o repositorio)
+.env
+.env.local
+.env.*.local
+
+# Cobertura de testes
+/coverage
+/.nyc_output
+
+# Cache de ferramentas
+.eslintcache
+*.tsbuildinfo
+
+# Editores / SO
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
