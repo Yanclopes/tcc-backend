@@ -1,7 +1,8 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 
@@ -9,6 +10,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
   const appConfig = config.get<AppConfig>('app')!;
+
+  // Headers seguros por padrao (X-Content-Type-Options, X-Frame-Options, HSTS etc.).
+  // CSP fica desligada pois a API nao serve HTML — Swagger UI serve seus proprios assets.
+  app.use(helmet({ contentSecurityPolicy: false }));
 
   // Prefixo global (ex.: /api/v1). O /health fica fora para o healthcheck.
   app.setGlobalPrefix(appConfig.apiPrefix, { exclude: ['health'] });
@@ -38,10 +43,7 @@ async function bootstrap() {
         'catalogo de perguntas por ODS, motor de jogo (REST + WebSocket) e camada analitica.',
     )
     .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'access-token',
-    )
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .addTag('auth', 'Autenticacao e consentimento (LGPD)')
     .addTag('users', 'Usuarios e perfis')
     .addTag('geo', 'Hierarquia geografica (pais, estado, cidade, escola)')

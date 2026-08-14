@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { RedisModule } from './common/redis/redis.module';
@@ -48,6 +50,12 @@ import { UsersModule } from './modules/users/users.module';
 
     RedisModule,
 
+    // Rate limiting global — bucket unico e generoso (120 req/min por IP).
+    // Endpoints sensiveis (auth) diminuem o limite com @Throttle override.
+    // Nao definir buckets extras nomeados: em @nestjs/throttler v6, TODOS os
+    // buckets sao aplicados por padrao — dois buckets = dois limites por request.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
+
     // Modulos de dominio.
     AuthModule,
     UsersModule,
@@ -61,6 +69,10 @@ import { UsersModule } from './modules/users/users.module';
     AnalyticsModule,
     DashboardModule,
     HealthModule,
+  ],
+  providers: [
+    // Aplica o rate limit em toda a aplicacao; endpoints usam @Throttle para override.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
