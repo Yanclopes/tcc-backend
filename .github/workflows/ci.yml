@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -66,6 +66,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    # NOTA DE SEGURANCA: os valores abaixo NAO sao segredos — sao apenas
+    # a config do binario para rodar contra o `postgres`/`redis` do service
+    # container, que vive apenas durante o job (poucos minutos) e e destruido
+    # ao fim. Nada aqui e usado em producao. Quando houver CD, credenciais
+    # reais (AWS, JWT_SECRET de prod, etc.) DEVEM vir de `${{ secrets.* }}`.
     env:
       NODE_ENV: test
       API_PREFIX: api/v1
