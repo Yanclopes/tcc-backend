@@ -61,7 +61,9 @@ services:
       REDIS_PORT: 6379
       DB_SYNCHRONIZE: 'false'
     ports:
-      - '${PORT:-3000}:3000'
+      # Expoe na 80 do host (Cloudflare fala HTTP na 80 por default).
+      # Container continua escutando 3000 internamente (var PORT=3000 acima).
+      - '80:3000'
     networks:
       - ods_net
 
