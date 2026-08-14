@@ -52,25 +52,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Carrega TODO o .env do host para dentro do container (inclui ADMIN_EMAIL,
+    # ADMIN_PASSWORD, JWT_SECRET etc). O bloco `environment` abaixo sobrescreve
+    # apenas o que precisa ser diferente do .env local (que aponta pra localhost).
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
-      PORT: 3000
-      API_PREFIX: ${API_PREFIX:-api/v1}
-      CORS_ORIGINS: ${CORS_ORIGINS:-*}
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: ${DB_USERNAME:-ods}
-      DB_PASSWORD: ${DB_PASSWORD:-ods_secret}
-      DB_DATABASE: ${DB_DATABASE:-ods_quiz}
-      DB_SYNCHRONIZE: 'false'
-      DB_LOGGING: 'false'
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_DB: 0
-      GAME_SESSION_TTL: ${GAME_SESSION_TTL:-7200}
-      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
-      GAME_DEFAULT_POWERUPS: ${GAME_DEFAULT_POWERUPS:-3}
+      DB_SYNCHRONIZE: 'false'
     ports:
       - '${PORT:-3000}:3000'
     networks:

@@ -27,8 +27,8 @@ Alinhada ao referencial teórico do TCC:
 
 Organização por módulos de domínio (`src/modules`):
 
-- **auth** — registro (com consentimento LGPD), login, JWT, guardas (inclui guarda opcional
-  que permite partidas anônimas).
+- **auth** — registro (com consentimento LGPD), login, JWT, guardas de rota e papel
+  (`JwtAuthGuard`, `RolesGuard`).
 - **users** — usuários (`app_user`), perfis (`role`) e escolaridade.
 - **geo** — hierarquia geográfica (país → estado → cidade → escola) para o recorte regional.
 - **goals** — os 17 ODS.
@@ -45,23 +45,30 @@ estado volátil da partida em andamento, para leitura/escrita de baixa latência
 
 ## Modelo de dados
 
-O schema foi portado do modelo concebido no dbdiagram para migrations do TypeORM:
+O schema foi portado do modelo concebido no dbdiagram para uma única migration do TypeORM:
 
-- `src/database/migrations/1730000000000-InitialSchema.ts` — todas as tabelas, FKs e índices.
-- `src/database/migrations/1730000000001-MaterializedViews.ts` — as 3 *materialized views*
-  analíticas (`mv_acerto_por_ods`, `mv_desempenho_por_escolaridade`, `mv_calibragem_perguntas`),
-  cada uma com índice único (necessário para `REFRESH ... CONCURRENTLY`).
+- `src/database/migrations/1730000000000-InitialSchema.ts` — todas as tabelas, FKs, índices,
+  recursos administrativos e as 3 *materialized views* analíticas
+  (`mv_acerto_por_ods`, `mv_desempenho_por_escolaridade`, `mv_calibragem_perguntas`), cada uma
+  com índice único (necessário para `REFRESH ... CONCURRENTLY`).
 
 ## Como executar
 
 ### Opção A — Tudo em containers
 
 ```bash
-cp .env.example .env            # ajuste os segredos (JWT_SECRET etc.)
-docker compose up -d --build    # sobe api + postgres + redis
-docker compose exec api npm run migration:run
-docker compose exec api npm run seed
+cp .env.example .env                        # ajuste JWT_SECRET, ADMIN_PASSWORD etc.
+docker compose up -d --build                # sobe api + postgres + redis
+docker compose exec api npm run migration:run:prod
+docker compose exec api npm run seed:prod
 ```
+
+> Dentro do container use os scripts `:prod` — eles rodam contra `dist/` (a imagem
+> de produção não tem `ts-node`, que é devDep). Os scripts sem sufixo (`migration:run`,
+> `seed`) são para desenvolvimento local com `ts-node`.
+>
+> O `docker-compose.yml` carrega o `.env` do host via `env_file:`. Alterou o `.env`?
+> Recrie o container: `docker compose up -d --force-recreate api`.
 
 API em `http://localhost:3000/api/v1` · Swagger em `http://localhost:3000/api/v1/docs`.
 
@@ -84,7 +91,7 @@ configurável (`GAME_SESSION_TTL`, padrão 2h):
 ```jsonc
 {
   "gameId": "uuid",
-  "userId": 1,                 // null em partida anônima
+  "userId": 1,
   "difficultyId": "classic",
   "educationLevelId": 3,
   "numberQuestions": 15,       // null = modo infinito
@@ -109,7 +116,9 @@ removida e os dados consolidados ficam no PostgreSQL.
 
 ## Fluxo de uma partida (REST)
 
-1. `POST /games` — inicia (anônima ou autenticada). Retorna `gameId` e estado inicial.
+Todos os endpoints exigem JWT (`Authorization: Bearer ...`).
+
+1. `POST /games` — inicia a partida vinculada ao usuário autenticado. Retorna `gameId` e estado inicial.
 2. `GET /games/:id/next` — próxima pergunta (sem a resposta correta).
 3. `POST /games/:id/answers` — envia a resposta; retorna acerto, opção correta e pontos.
 4. `POST /games/:id/powerups` — usa `fifty`, `skip` ou `audience`.
@@ -117,7 +126,9 @@ removida e os dados consolidados ficam no PostgreSQL.
 
 ## Eventos WebSocket
 
-Namespace `/game` (Socket.IO). Cada partida usa uma *room* `game:{gameId}`.
+Namespace `/game` (Socket.IO). O handshake exige JWT válido — via `auth.token` do socket.io
+ou header `Authorization: Bearer ...`. Sem token válido, a conexão é encerrada.
+Cada partida usa uma *room* `game:{gameId}`.
 
 | Cliente → Servidor | Payload | Servidor → Cliente |
 | --- | --- | --- |
