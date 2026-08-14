@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Lint + testes unitarios. Nao precisa de infra (usa mocks).
+  unit-tests:
+    name: Unit tests + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (check-only, sem --fix)
+        run: npm run lint:check
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+  # E2E: sobe postgres + redis reais como service containers, roda migrations
+  # e seed, e executa a suite e2e (fluxo completo autenticado de partida).
+  e2e-tests:
+    name: E2E tests (com Postgres + Redis)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ods
+          POSTGRES_PASSWORD: ods_secret
+          POSTGRES_DB: ods_quiz
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      API_PREFIX: api/v1
+      CORS_ORIGINS: '*'
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_USERNAME: ods
+      DB_PASSWORD: ods_secret
+      DB_DATABASE: ods_quiz
+      DB_SYNCHRONIZE: 'false'
+      DB_LOGGING: 'false'
+      REDIS_HOST: localhost
+      REDIS_PORT: '6379'
+      REDIS_DB: '0'
+      GAME_SESSION_TTL: '7200'
+      JWT_SECRET: test-secret-not-for-production
+      JWT_EXPIRES_IN: 1d
+      GAME_DEFAULT_POWERUPS: '3'
+      ADMIN_EMAIL: admin@ci.local
+      ADMIN_PASSWORD: ci-admin-password
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (gera dist/ para os scripts :prod)
+        run: npm run build
+
+      - name: Run migrations
+        run: npm run migration:run:prod
+
+      - name: Seed base data
+        run: npm run seed:prod
+
+      - name: E2E tests
+        run: npm run test:e2e
