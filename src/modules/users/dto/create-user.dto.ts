@@ -1,12 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsInt,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Maria Silva' })
@@ -25,15 +18,16 @@ export class CreateUserDto {
   @MaxLength(72) // limite do bcrypt
   password: string;
 
-  @ApiPropertyOptional({ example: 1, description: 'Id da escola' })
+  @ApiPropertyOptional({ example: 1, description: 'Id da escola (opcional)' })
   @IsOptional()
   @IsInt()
   schoolId?: number;
 
-  @ApiPropertyOptional({ example: 2, description: 'Id do nivel de escolaridade' })
-  @IsOptional()
+  // Escolaridade e obrigatoria: sustenta o recorte por segmento educacional
+  // previsto na pesquisa.
+  @ApiProperty({ example: 2, description: 'Id do nivel de escolaridade (obrigatorio)' })
   @IsInt()
-  educationLevelId?: number;
+  educationLevelId: number;
 
   // Observacao: o papel (role) NAO e aceito no cadastro publico. Todo novo
   // usuario nasce como 'user'; a promocao a 'admin' e feita por um admin.

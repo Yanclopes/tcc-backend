@@ -170,6 +170,7 @@ async function run(): Promise<void> {
         password: await bcrypt.hash(adminPassword, 10),
         role: masterRole,
         school: unidavi,
+        educationLevel: levelEntities[3], // Ensino Superior — obrigatorio
       }),
     );
     console.log(`Master criado: ${adminEmail} (troque a senha em producao).`);

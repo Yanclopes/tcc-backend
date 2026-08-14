@@ -42,12 +42,9 @@ export class AppUser {
   @JoinColumn({ name: 'school' })
   school?: School | null;
 
-  @ManyToOne(() => EducationLevel, (level) => level.users, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne(() => EducationLevel, (level) => level.users, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'education_level' })
-  educationLevel?: EducationLevel | null;
+  educationLevel: EducationLevel;
 
   @ManyToOne(() => Role, (role) => role.users, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'role' })
