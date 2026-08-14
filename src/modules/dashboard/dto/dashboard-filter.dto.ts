@@ -1,20 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsISO8601, IsOptional, Max, Min } from 'class-validator';
 import { RegionLevel } from './region-level.enum';
 
 /**
- * Filtros do dashboard. Todos opcionais e combináveis. Os filtros de regiao
- * (estado/cidade/escola) e de escolaridade implicam participantes AUTENTICADOS,
- * pois a partida anonima nao possui vinculo geografico/escolar.
+ * Filtros do dashboard. Todos opcionais e combinaveis. Como a autenticacao e
+ * obrigatoria para jogar, toda partida ja possui vinculo com o usuario — logo,
+ * nao existe filtro "incluir anonimos".
  */
 export class DashboardFilterDto {
   @ApiPropertyOptional({ example: 13, description: 'Numero canonico do ODS (1-17)' })
@@ -53,17 +44,6 @@ export class DashboardFilterDto {
   @IsOptional()
   @IsISO8601()
   to?: string;
-
-  @ApiPropertyOptional({
-    example: true,
-    default: true,
-    description:
-      'Inclui partidas anonimas nas estatisticas gerais. Ignorado quando ha filtro regional/escolar.',
-  })
-  @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true' || value === '1')
-  @IsBoolean()
-  includeAnonymous?: boolean = true;
 
   @ApiPropertyOptional({
     enum: RegionLevel,

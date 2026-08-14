@@ -63,10 +63,6 @@ export class DashboardService {
     if (filter.to) {
       qb.andWhere('ga.answered_at <= :to', { to: filter.to });
     }
-    // includeAnonymous=false restringe a participantes autenticados.
-    if (filter.includeAnonymous === false) {
-      qb.andWhere('u.id IS NOT NULL');
-    }
     return qb;
   }
 
@@ -116,13 +112,10 @@ export class DashboardService {
   }
 
   /**
-   * Desempenho por regiao (estado, cidade ou escola). So considera participantes
-   * autenticados (a partida anonima nao tem vinculo geografico).
+   * Desempenho por regiao (estado, cidade ou escola). Depende do participante
+   * ter informado escola no perfil (dado opcional no cadastro).
    */
-  async byRegion(
-    filter: DashboardFilterDto,
-    level: RegionLevel,
-  ): Promise<RegionBreakdownRowDto[]> {
+  async byRegion(filter: DashboardFilterDto, level: RegionLevel): Promise<RegionBreakdownRowDto[]> {
     const map: Record<RegionLevel, { idCol: string; labelCol: string }> = {
       [RegionLevel.STATE]: { idCol: 'st.id', labelCol: 'st.name' },
       [RegionLevel.CITY]: { idCol: 'ci.id', labelCol: 'ci.name' },
