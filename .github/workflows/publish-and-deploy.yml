@@ -88,8 +88,11 @@ jobs:
         env:
           INSTANCE_ID: ${{ steps.ec2.outputs.instance_id }}
         run: |
-          # Script de deploy — roda no EC2 via SSM (nao precisa SSH).
+          # Script de deploy — roda no EC2 via SSM.
+          # SSM AWS-RunShellScript usa /bin/sh (dash) por default; envolvemos em
+          # `bash -c` para ter -o pipefail e o resto do comportamento familiar.
           SCRIPT=$(cat <<'DEPLOY_SCRIPT'
+          bash -c '
           set -euxo pipefail
           cd /opt/desafio-ods
           git pull --ff-only
@@ -101,6 +104,7 @@ jobs:
           done
           docker compose -f docker-compose.prod.yml exec -T api npm run migration:run:prod
           docker image prune -f
+          '
           DEPLOY_SCRIPT
           )
 
