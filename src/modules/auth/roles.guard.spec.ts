@@ -29,16 +29,14 @@ describe('RolesGuard', () => {
 
   it('libera quando o papel do usuario e suficiente', () => {
     reflector.getAllAndOverride.mockReturnValue([AppRole.ADMIN]);
-    expect(
-      guard.canActivate(contextWith({ userId: 1, email: 'a@a.com', role: 'admin' })),
-    ).toBe(true);
+    expect(guard.canActivate(contextWith({ userId: 1, email: 'a@a.com', role: 'admin' }))).toBe(
+      true,
+    );
   });
 
   it('bloqueia quando o papel e insuficiente', () => {
     reflector.getAllAndOverride.mockReturnValue([AppRole.ADMIN]);
-    expect(() => guard.canActivate(contextWith({ role: 'user' }))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(contextWith({ role: 'user' }))).toThrow(ForbiddenException);
   });
 
   it('bloqueia quando nao ha usuario', () => {

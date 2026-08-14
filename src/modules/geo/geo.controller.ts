@@ -21,27 +21,21 @@ export class GeoController {
   @Get('states')
   @ApiOperation({ summary: 'Lista estados (filtra por countryId opcional)' })
   @ApiQuery({ name: 'countryId', required: false, type: Number })
-  states(
-    @Query('countryId', OptionalParseIntPipe) countryId?: number,
-  ): Promise<State[]> {
+  states(@Query('countryId', OptionalParseIntPipe) countryId?: number): Promise<State[]> {
     return this.geoService.findStates(countryId);
   }
 
   @Get('cities')
   @ApiOperation({ summary: 'Lista cidades (filtra por stateId opcional)' })
   @ApiQuery({ name: 'stateId', required: false, type: Number })
-  cities(
-    @Query('stateId', OptionalParseIntPipe) stateId?: number,
-  ): Promise<City[]> {
+  cities(@Query('stateId', OptionalParseIntPipe) stateId?: number): Promise<City[]> {
     return this.geoService.findCities(stateId);
   }
 
   @Get('schools')
   @ApiOperation({ summary: 'Lista escolas (filtra por cityId opcional)' })
   @ApiQuery({ name: 'cityId', required: false, type: Number })
-  schools(
-    @Query('cityId', OptionalParseIntPipe) cityId?: number,
-  ): Promise<School[]> {
+  schools(@Query('cityId', OptionalParseIntPipe) cityId?: number): Promise<School[]> {
     return this.geoService.findSchools(cityId);
   }
 }

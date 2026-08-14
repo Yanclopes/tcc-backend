@@ -1,9 +1,4 @@
-import {
-  BASE_POINTS,
-  computeScore,
-  POWERUP_PENALTY,
-  STREAK_BONUS,
-} from './game-scoring';
+import { BASE_POINTS, computeScore, POWERUP_PENALTY, STREAK_BONUS } from './game-scoring';
 
 describe('computeScore', () => {
   it('nao pontua e zera a streak quando erra', () => {

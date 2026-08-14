@@ -8,11 +8,7 @@ import { MvDesempenhoPorEscolaridade } from './entities/mv-desempenho-por-escola
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      MvAcertoPorOds,
-      MvDesempenhoPorEscolaridade,
-      MvCalibragemPerguntas,
-    ]),
+    TypeOrmModule.forFeature([MvAcertoPorOds, MvDesempenhoPorEscolaridade, MvCalibragemPerguntas]),
   ],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],

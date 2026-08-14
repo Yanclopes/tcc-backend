@@ -10,9 +10,7 @@ import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let usersService: jest.Mocked<
-    Pick<UsersService, 'create' | 'findByEmailWithPassword'>
-  >;
+  let usersService: jest.Mocked<Pick<UsersService, 'create' | 'findByEmailWithPassword'>>;
 
   beforeEach(async () => {
     usersService = {

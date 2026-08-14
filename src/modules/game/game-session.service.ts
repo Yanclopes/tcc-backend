@@ -35,9 +35,7 @@ export class GameSessionService {
   async getOrFail(gameId: string): Promise<GameSessionState> {
     const state = await this.get(gameId);
     if (!state) {
-      throw new NotFoundException(
-        `Sessao de jogo ${gameId} nao encontrada ou expirada.`,
-      );
+      throw new NotFoundException(`Sessao de jogo ${gameId} nao encontrada ou expirada.`);
     }
     return state;
   }

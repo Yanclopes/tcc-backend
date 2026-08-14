@@ -27,9 +27,7 @@ export class AuthService {
   /** Registra um usuario, grava consentimento (se informado) e ja autentica. */
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
     if (dto.suggestedSchoolName && !dto.suggestedSchoolCityId) {
-      throw new BadRequestException(
-        'Informe a cidade da escola sugerida (suggestedSchoolCityId).',
-      );
+      throw new BadRequestException('Informe a cidade da escola sugerida (suggestedSchoolCityId).');
     }
 
     const user = await this.usersService.create(dto);
