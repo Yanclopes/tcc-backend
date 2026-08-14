@@ -4,9 +4,8 @@ import { Game } from './game.entity';
 
 /**
  * Modo de dificuldade do jogo. Chave primaria textual (ex.: 'easy', 'endless').
- * Mantem o nome de coluna 'dificulty' do schema original.
  */
-@Entity('game_dificulty')
+@Entity('game_difficulty')
 export class GameDifficulty {
   @ApiProperty({ example: 'classic', description: 'Identificador textual do modo' })
   @PrimaryColumn({ type: 'varchar' })

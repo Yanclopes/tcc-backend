@@ -2,7 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class StartGameDto {
-  @ApiProperty({ example: 'classic', description: 'Id do modo de dificuldade (game_dificulty.id)' })
+  @ApiProperty({
+    example: 'classic',
+    description: 'Id do modo de dificuldade (game_difficulty.id)',
+  })
   @IsString()
   difficultyId: string;
 
