@@ -1,0 +1,74 @@
+# =====================================================================
+# Compose de PRODUCAO — usado no EC2. Nao builda a imagem: puxa do GHCR.
+# A imagem e publicada pelo GitHub Actions (workflow publish-and-deploy.yml).
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+# =====================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ods_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-ods}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ods_secret}
+      POSTGRES_DB: ${DB_DATABASE:-ods_quiz}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-ods} -d ${DB_DATABASE:-ods_quiz}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ods_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ods_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ods_net
+
+  api:
+    image: ghcr.io/yanclopes/tcc-backend:master
+    container_name: ods_api
+    restart: unless-stopped
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DB_SYNCHRONIZE: 'false'
+    ports:
+      - '${PORT:-3000}:3000'
+    networks:
+      - ods_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ods_net:
+    driver: bridge
