@@ -1,25 +1,29 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 /**
- * Teste ponta-a-ponta. Requer a infraestrutura no ar e o schema migrado:
+ * Testes de saude e catalogo publico. Requer infra no ar e schema migrado:
  *   docker compose up -d postgres redis
- *   npm run migration:run
- *   npm run seed
+ *   npm run migration:run:prod
+ *   npm run seed:prod
  *   npm run test:e2e
  *
- * Cobre o caminho critico: saude do servico, catalogo de ODS e o ciclo completo
- * de uma partida anonima (start -> next -> answer -> finish).
+ * O throttler global e desativado nos testes para nao interferir na cadencia
+ * das requisicoes. O fluxo autenticado de partida vive em game.e2e-spec.ts.
  */
-describe('API (e2e)', () => {
+describe('API — saude e catalogo (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
@@ -33,41 +37,23 @@ describe('API (e2e)', () => {
     await app.close();
   });
 
-  it('/health (GET) responde ok', async () => {
+  it('/health responde ok e reporta Postgres + Redis up', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
     expect(res.body.status).toBe('ok');
+    expect(res.body.info.database.status).toBe('up');
+    expect(res.body.info.redis.status).toBe('up');
   });
 
-  it('/api/v1/goals (GET) retorna os 17 ODS', async () => {
+  it('GET /api/v1/goals retorna os 17 ODS', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/goals').expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(17);
   });
 
-  it('ciclo de partida anonima: start -> next -> answer -> finish', async () => {
-    const server = app.getHttpServer();
-
-    const start = await request(server)
+  it('POST /api/v1/games sem token e rejeitado (auth obrigatoria)', async () => {
+    await request(app.getHttpServer())
       .post('/api/v1/games')
       .send({ difficultyId: 'quick' })
-      .expect(201);
-    const gameId = start.body.gameId;
-    expect(gameId).toBeDefined();
-
-    const next = await request(server).get(`/api/v1/games/${gameId}/next`).expect(200);
-    expect(next.body.question).toBeDefined();
-    const optionId = next.body.question.options[0].id;
-
-    const answer = await request(server)
-      .post(`/api/v1/games/${gameId}/answers`)
-      .send({ optionId })
-      .expect(201);
-    expect(answer.body).toHaveProperty('isCorrect');
-    expect(answer.body).toHaveProperty('correctOptionId');
-
-    const finish = await request(server)
-      .post(`/api/v1/games/${gameId}/finish`)
-      .expect(201);
-    expect(finish.body.gameId).toBe(gameId);
+      .expect(401);
   });
 });
