@@ -89,10 +89,12 @@ jobs:
           INSTANCE_ID: ${{ steps.ec2.outputs.instance_id }}
         run: |
           # Script de deploy — roda no EC2 via SSM.
-          # SSM AWS-RunShellScript usa /bin/sh (dash) por default; envolvemos em
-          # `bash -c` para ter -o pipefail e o resto do comportamento familiar.
+          # SSM AWS-RunShellScript executa como root em /bin/sh (dash). Nos:
+          #   - envolvemos em `sudo -u ubuntu bash -lc` (o repo, .env e docker
+          #     estao no contexto do user ubuntu, nao do root);
+          #   - -l carrega o env do login (PATH com /usr/bin/docker etc).
           SCRIPT=$(cat <<'DEPLOY_SCRIPT'
-          bash -c '
+          sudo -u ubuntu bash -lc '
           set -euxo pipefail
           cd /opt/desafio-ods
           git pull --ff-only
