@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { AuditAction } from '../audit/audit-action.enum';
+import { AuditService } from '../audit/audit.service';
 import { City } from '../geo/entities/city.entity';
 import { School } from '../geo/entities/school.entity';
 import { AppUser } from '../users/entities/app-user.entity';
@@ -23,6 +25,7 @@ export class SchoolsService {
     @InjectRepository(SchoolSuggestion)
     private readonly suggestionRepo: Repository<SchoolSuggestion>,
     @InjectRepository(AppUser) private readonly userRepo: Repository<AppUser>,
+    private readonly audit: AuditService,
   ) {}
 
   // ------------------------------------------------------------------
@@ -99,7 +102,11 @@ export class SchoolsService {
    * Aprova a sugestao: cria a escola real e, se houver aluno vinculado, ajusta o
    * cadastro dele para apontar para a nova escola. Os dois lados ficam alinhados.
    */
-  async approveSuggestion(id: number, dto: ApproveSuggestionDto): Promise<School> {
+  async approveSuggestion(
+    id: number,
+    dto: ApproveSuggestionDto,
+    actorUserId: number,
+  ): Promise<School> {
     const suggestion = await this.getSuggestion(id);
     if (suggestion.status !== 'pending') {
       throw new BadRequestException('Esta sugestao ja foi resolvida.');
@@ -124,17 +131,35 @@ export class SchoolsService {
     suggestion.createdSchool = school;
     suggestion.resolvedAt = new Date();
     await this.suggestionRepo.save(suggestion);
+    await this.audit.record({
+      actorUserId,
+      action: AuditAction.SCHOOL_SUGGESTION_APPROVED,
+      targetType: 'school_suggestion',
+      targetId: id,
+      metadata: {
+        createdSchoolId: school.id,
+        suggestedByUserId: suggestion.suggestedBy?.id ?? null,
+      },
+    });
     return school;
   }
 
-  async rejectSuggestion(id: number): Promise<SchoolSuggestion> {
+  async rejectSuggestion(id: number, actorUserId: number): Promise<SchoolSuggestion> {
     const suggestion = await this.getSuggestion(id);
     if (suggestion.status !== 'pending') {
       throw new BadRequestException('Esta sugestao ja foi resolvida.');
     }
     suggestion.status = 'rejected';
     suggestion.resolvedAt = new Date();
-    return this.suggestionRepo.save(suggestion);
+    const saved = await this.suggestionRepo.save(suggestion);
+    await this.audit.record({
+      actorUserId,
+      action: AuditAction.SCHOOL_SUGGESTION_REJECTED,
+      targetType: 'school_suggestion',
+      targetId: id,
+      metadata: { suggestedByUserId: suggestion.suggestedBy?.id ?? null },
+    });
+    return saved;
   }
 
   async countPendingSuggestions(): Promise<number> {

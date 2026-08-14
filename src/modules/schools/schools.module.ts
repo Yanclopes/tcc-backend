@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuditModule } from '../audit/audit.module';
 import { City } from '../geo/entities/city.entity';
 import { School } from '../geo/entities/school.entity';
 import { AppUser } from '../users/entities/app-user.entity';
@@ -11,6 +12,7 @@ import { SchoolsService } from './schools.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([School, City, EducationLevel, SchoolSuggestion, AppUser]),
+    AuditModule,
   ],
   controllers: [SchoolsController],
   providers: [SchoolsService],

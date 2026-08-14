@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
+import { AuditAction } from '../audit/audit-action.enum';
+import { AuditService } from '../audit/audit.service';
 import { Goal } from '../goals/entities/goal.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -15,6 +17,7 @@ export class QuestionsService {
     @InjectRepository(Goal)
     private readonly goalRepository: Repository<Goal>,
     private readonly dataSource: DataSource,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -66,9 +69,7 @@ export class QuestionsService {
   async update(id: number, dto: UpdateQuestionDto): Promise<Question> {
     const wantsOptions = dto.options !== undefined;
     if (wantsOptions && dto.correctOptionIndex === undefined) {
-      throw new BadRequestException(
-        'Ao substituir as alternativas, informe correctOptionIndex.',
-      );
+      throw new BadRequestException('Ao substituir as alternativas, informe correctOptionIndex.');
     }
     if (wantsOptions && dto.correctOptionIndex! >= dto.options!.length) {
       throw new BadRequestException('correctOptionIndex fora do intervalo de options.');
@@ -124,10 +125,20 @@ export class QuestionsService {
   }
 
   /** Ativa/desativa a pergunta (atalho de manutencao). */
-  async setActive(id: number, isActive: boolean): Promise<Question> {
+  async setActive(id: number, isActive: boolean, actorUserId: number): Promise<Question> {
     const question = await this.findOne(id);
+    const previousState = question.isActive;
     question.isActive = isActive;
     await this.questionRepository.save(question);
+    if (previousState !== isActive) {
+      await this.audit.record({
+        actorUserId,
+        action: isActive ? AuditAction.QUESTION_ACTIVATED : AuditAction.QUESTION_DEACTIVATED,
+        targetType: 'question',
+        targetId: id,
+        metadata: { previousState },
+      });
+    }
     return question;
   }
 
@@ -200,10 +211,9 @@ export class QuestionsService {
       qb.andWhere('question.difficulty = :difficulty', { difficulty: params.difficulty });
     }
     if (params.educationLevelId) {
-      qb.andWhere(
-        '(question.education_level = :level OR question.education_level IS NULL)',
-        { level: params.educationLevelId },
-      );
+      qb.andWhere('(question.education_level = :level OR question.education_level IS NULL)', {
+        level: params.educationLevelId,
+      });
     }
     if (params.excludeIds.length > 0) {
       qb.andWhere('question.id NOT IN (:...excludeIds)', { excludeIds: params.excludeIds });

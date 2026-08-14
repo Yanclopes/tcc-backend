@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { OptionalParseIntPipe } from '../../common/pipes/optional-parse-int.pipe';
+import { CurrentUser, JwtUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AppRole } from '../auth/role.enum';
 import { Roles } from '../auth/roles.decorator';
@@ -45,9 +46,7 @@ export class QuestionsController {
   @Get()
   @ApiOperation({ summary: 'Lista perguntas para manutencao (somente admin)' })
   @ApiQuery({ name: 'goalNumber', required: false, type: Number })
-  findAll(
-    @Query('goalNumber', OptionalParseIntPipe) goalNumber?: number,
-  ): Promise<Question[]> {
+  findAll(@Query('goalNumber', OptionalParseIntPipe) goalNumber?: number): Promise<Question[]> {
     return this.questionsService.findAll(goalNumber);
   }
 
@@ -59,10 +58,7 @@ export class QuestionsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualiza uma pergunta (somente admin)' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateQuestionDto,
-  ): Promise<Question> {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateQuestionDto): Promise<Question> {
     return this.questionsService.update(id, dto);
   }
 
@@ -71,8 +67,9 @@ export class QuestionsController {
   setActive(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SetActiveDto,
+    @CurrentUser() actor: JwtUser,
   ): Promise<Question> {
-    return this.questionsService.setActive(id, dto.isActive);
+    return this.questionsService.setActive(id, dto.isActive, actor.userId);
   }
 
   @Delete(':id')

@@ -68,8 +68,9 @@ export class SchoolsController {
   approve(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ApproveSuggestionDto,
+    @CurrentUser() actor: JwtUser,
   ): Promise<School> {
-    return this.schoolsService.approveSuggestion(id, dto);
+    return this.schoolsService.approveSuggestion(id, dto, actor.userId);
   }
 
   @Post('suggestions/:id/reject')
@@ -77,17 +78,18 @@ export class SchoolsController {
   @Roles(AppRole.ADMIN)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Rejeita a sugestao de escola (somente admin)' })
-  reject(@Param('id', ParseIntPipe) id: number): Promise<SchoolSuggestion> {
-    return this.schoolsService.rejectSuggestion(id);
+  reject(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() actor: JwtUser,
+  ): Promise<SchoolSuggestion> {
+    return this.schoolsService.rejectSuggestion(id, actor.userId);
   }
 
   // ----- CRUD de escolas -----
   @Get()
   @ApiOperation({ summary: 'Lista escolas (com cidade e niveis atendidos)' })
   @ApiQuery({ name: 'cityId', required: false, type: Number })
-  findAll(
-    @Query('cityId', OptionalParseIntPipe) cityId?: number,
-  ): Promise<School[]> {
+  findAll(@Query('cityId', OptionalParseIntPipe) cityId?: number): Promise<School[]> {
     return this.schoolsService.findAll(cityId);
   }
 
@@ -111,10 +113,7 @@ export class SchoolsController {
   @Roles(AppRole.ADMIN)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Atualiza uma escola (somente admin)' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateSchoolDto,
-  ): Promise<School> {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSchoolDto): Promise<School> {
     return this.schoolsService.update(id, dto);
   }
 
