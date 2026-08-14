@@ -19,7 +19,7 @@ export type GameSessionStatus = 'in_progress' | 'finished';
  */
 export interface GameSessionState {
   gameId: string;
-  userId: number | null;
+  userId: number;
   difficultyId: string;
   educationLevelId: number | null;
   /** Quantidade total de perguntas do modo; null = infinito (endless). */

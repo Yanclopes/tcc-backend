@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,7 +49,7 @@ export class GameService {
   // ------------------------------------------------------------------
   async startGame(
     difficultyId: string,
-    userId: number | null,
+    userId: number,
     educationLevelId?: number | null,
   ): Promise<GameStateDto> {
     const difficulty = await this.difficultyRepo.findOne({ where: { id: difficultyId } });
@@ -67,12 +62,10 @@ export class GameService {
 
     const game = this.gameRepo.create({
       id: gameId,
-      user: userId ? ({ id: userId } as AppUser) : null,
+      user: { id: userId } as AppUser,
       status,
       difficulty,
-      currentEducationLevel: educationLevelId
-        ? ({ id: educationLevelId } as EducationLevel)
-        : null,
+      currentEducationLevel: educationLevelId ? ({ id: educationLevelId } as EducationLevel) : null,
       currentScore: 0,
       currentStreak: 0,
     });
@@ -95,7 +88,7 @@ export class GameService {
 
     const state: GameSessionState = {
       gameId,
-      userId: userId ?? null,
+      userId,
       difficultyId,
       educationLevelId: educationLevelId ?? null,
       numberQuestions: difficulty.numberQuestions ?? null,
@@ -278,7 +271,7 @@ export class GameService {
 
     await this.rankingRepo.save(
       this.rankingRepo.create({
-        user: state.userId ? ({ id: state.userId } as AppUser) : null,
+        user: { id: state.userId } as AppUser,
         game: { id: gameId } as Game,
         score: state.score,
         completedAt: new Date(),
@@ -394,15 +387,8 @@ export class GameService {
     );
   }
 
-  private async updateGameProgress(
-    gameId: string,
-    score: number,
-    streak: number,
-  ): Promise<void> {
-    await this.gameRepo.update(
-      { id: gameId },
-      { currentScore: score, currentStreak: streak },
-    );
+  private async updateGameProgress(gameId: string, score: number, streak: number): Promise<void> {
+    await this.gameRepo.update({ id: gameId }, { currentScore: score, currentStreak: streak });
   }
 
   private async markGamePowerupUsed(gameId: string, powerupName: string): Promise<void> {
@@ -417,9 +403,7 @@ export class GameService {
   private async getStatus(label: string): Promise<GameStatus> {
     const status = await this.statusRepo.findOne({ where: { label } });
     if (!status) {
-      throw new NotFoundException(
-        `game_status '${label}' ausente. Rode a seed (npm run seed).`,
-      );
+      throw new NotFoundException(`game_status '${label}' ausente. Rode a seed (npm run seed).`);
     }
     return status;
   }

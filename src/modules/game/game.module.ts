@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module';
 import { PowerupsModule } from '../powerups/powerups.module';
 import { GamePowerup } from '../powerups/entities/game-powerup.entity';
 import { QuestionsModule } from '../questions/questions.module';
@@ -18,6 +19,7 @@ import { GameSessionService } from './game-session.service';
     TypeOrmModule.forFeature([Game, GameStatus, GameDifficulty, GameAnswer, GamePowerup, Ranking]),
     QuestionsModule,
     PowerupsModule,
+    AuthModule,
   ],
   controllers: [GameController],
   providers: [GameService, GameSessionService, GameGateway],

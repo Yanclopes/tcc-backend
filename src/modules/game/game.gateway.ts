@@ -1,4 +1,5 @@
 import { Logger, UsePipes, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,6 +11,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { JwtPayload } from '../auth/jwt.strategy';
 import { StartGameDto } from './dto/start-game.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { UsePowerupDto } from './dto/use-powerup.dto';
@@ -18,6 +20,9 @@ import { GameService } from './game.service';
 /**
  * Camada de tempo real do jogo. Espelha as acoes REST em eventos de socket,
  * delegando toda a regra de negocio ao GameService (fonte unica da verdade).
+ *
+ * Autenticacao: o handshake exige um JWT valido (via `auth.token` do socket.io
+ * ou header Authorization: Bearer ...). Sem token valido, a conexao e fechada.
  *
  * Cada partida usa uma "room" nomeada pelo gameId, o que permite, futuramente,
  * espectadores e modos multiplayer sem alterar o motor de jogo.
@@ -43,10 +48,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(GameGateway.name);
 
-  constructor(private readonly gameService: GameService) {}
+  constructor(
+    private readonly gameService: GameService,
+    private readonly jwt: JwtService,
+  ) {}
 
-  handleConnection(client: Socket): void {
-    this.logger.log(`Cliente conectado: ${client.id}`);
+  async handleConnection(client: Socket): Promise<void> {
+    try {
+      const token = this.extractToken(client);
+      const payload = await this.jwt.verifyAsync<JwtPayload>(token);
+      client.data.userId = payload.sub;
+      this.logger.log(`Cliente conectado: ${client.id} (user ${payload.sub})`);
+    } catch {
+      this.logger.warn(`Handshake rejeitado: ${client.id}`);
+      client.emit('game:error', 'Autenticacao obrigatoria.');
+      client.disconnect(true);
+    }
   }
 
   handleDisconnect(client: Socket): void {
@@ -58,9 +75,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: StartGameDto,
   ): Promise<void> {
-    // A autenticacao via handshake pode ser adicionada aqui; por ora, anonimo.
+    const userId = client.data.userId as number;
     const state = await this.run(() =>
-      this.gameService.startGame(dto.difficultyId, null, dto.educationLevelId),
+      this.gameService.startGame(dto.difficultyId, userId, dto.educationLevelId),
     );
     await client.join(this.room(state.gameId));
     this.server.to(this.room(state.gameId)).emit('game:started', state);
@@ -86,9 +103,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('game:powerup')
   async onPowerup(@MessageBody() dto: UsePowerupDto & { gameId: string }): Promise<void> {
-    const result = await this.run(() =>
-      this.gameService.usePowerup(dto.gameId, dto.powerup),
-    );
+    const result = await this.run(() => this.gameService.usePowerup(dto.gameId, dto.powerup));
     this.server.to(this.room(dto.gameId)).emit('game:powerup:result', result);
   }
 
@@ -100,6 +115,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private room(gameId: string): string {
     return `game:${gameId}`;
+  }
+
+  private extractToken(client: Socket): string {
+    const auth = (client.handshake.auth as { token?: string } | undefined)?.token;
+    if (auth) return auth;
+    const header = client.handshake.headers.authorization;
+    if (header?.startsWith('Bearer ')) return header.slice(7);
+    throw new Error('missing token');
   }
 
   /** Converte erros de dominio (Nest) em WsException legiveis pelo cliente. */

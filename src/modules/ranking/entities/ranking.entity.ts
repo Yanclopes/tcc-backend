@@ -13,9 +13,9 @@ export class Ranking {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => AppUser, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => AppUser, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user' })
-  user?: AppUser | null;
+  user: AppUser;
 
   @ManyToOne(() => Game, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'game' })

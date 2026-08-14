@@ -3,8 +3,9 @@ import { AuthGuard } from '@nestjs/passport';
 
 /**
  * Guarda opcional: se houver JWT valido, popula req.user; se nao houver (ou for
- * invalido), deixa passar como anonimo. Essencial para permitir partidas
- * anonimas — que ampliam a amostra da pesquisa — sem bloquear o endpoint.
+ * invalido), deixa passar como anonimo. Uso pontual em endpoints publicos que
+ * ainda assim se beneficiam de saber quem e o usuario quando logado (ex.:
+ * sugestao de escola no cadastro — sem login vira sugestao "orfa").
  */
 @Injectable()
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {

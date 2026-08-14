@@ -17,7 +17,7 @@ import { GameSessionState } from './game-session.types';
 function baseState(overrides: Partial<GameSessionState> = {}): GameSessionState {
   return {
     gameId: 'game-1',
-    userId: null,
+    userId: 1,
     difficultyId: 'classic',
     educationLevelId: null,
     numberQuestions: 15,
@@ -93,9 +93,7 @@ describe('GameService', () => {
   describe('submitAnswer', () => {
     it('lanca erro quando nao ha pergunta em aberto', async () => {
       session.getOrFail.mockResolvedValue(baseState({ currentQuestion: null }));
-      await expect(service.submitAnswer('game-1', 1)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(service.submitAnswer('game-1', 1)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('pontua e incrementa a streak ao acertar', async () => {

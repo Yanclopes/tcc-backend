@@ -24,19 +24,16 @@ export class Game {
   @PrimaryColumn({ type: 'varchar' })
   id: string;
 
-  /**
-   * Nullable: permite jogo anonimo, ampliando a amostra da pesquisa.
-   */
-  @ManyToOne(() => AppUser, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => AppUser, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user' })
-  user?: AppUser | null;
+  user: AppUser;
 
   @ManyToOne(() => GameStatus, (status) => status.games, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'status' })
   status: GameStatus;
 
   @ManyToOne(() => GameDifficulty, (difficulty) => difficulty.games, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'dificulty' })
+  @JoinColumn({ name: 'difficulty' })
   difficulty: GameDifficulty;
 
   @ManyToOne(() => EducationLevel, { nullable: true, onDelete: 'SET NULL' })
