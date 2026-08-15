@@ -292,28 +292,14 @@ export class GameService {
   // Auxiliares privados
   // ==================================================================
   private async applySkip(state: GameSessionState): Promise<PowerupResultDto> {
-    const current = state.currentQuestion!;
-    state.answered += 1;
-    // Registra o "pulo" como resposta sem opcao (dado bruto de comportamento).
-    await this.persistAnswer({
-      gameId: state.gameId,
-      questionId: current.questionId,
-      optionId: null,
-      isCorrect: false,
-      responseTimeMs: this.resolveResponseTime(current.startedAt),
-      sequence: state.answered,
-      powerupName: 'skip',
-    });
+    // A pergunta atual e apenas TROCADA: ja esta em servedQuestionIds (foi
+    // adicionada em getNextQuestion) e por isso nao volta. Nao registra
+    // game_answer nem incrementa "answered" — do ponto de vista da partida,
+    // e como se essa pergunta nunca tivesse sido feita.
     state.currentQuestion = null;
-
-    const finished = this.reachedEnd(state);
-    if (finished) state.status = STATUS_FINISHED;
     await this.session.save(state);
 
-    const next = finished
-      ? { question: null, state: this.toStateDto(state), finished: true }
-      : await this.getNextQuestion(state.gameId);
-
+    const next = await this.getNextQuestion(state.gameId);
     return { powerup: 'skip', next, state: next.state };
   }
 
@@ -338,11 +324,37 @@ export class GameService {
     return Math.max(0, Math.min(serverMs, clientMs));
   }
 
+  // Minimo de respostas reais para exibir distribuicao "de verdade" na plateia.
+  // Abaixo disso, a amostra e pequena demais para representar a "galera" e
+  // caimos no fallback simulado.
+  private static readonly AUDIENCE_MIN_SAMPLES = 30;
+
   private async simulateAudience(questionId: number): Promise<Record<number, number>> {
+    // 1) Tenta usar a distribuicao real de respostas do banco.
+    const rows = await this.answerRepo
+      .createQueryBuilder('a')
+      .select('a.optionId', 'optionId')
+      .addSelect('COUNT(*)', 'count')
+      .where('a.question = :questionId', { questionId })
+      .andWhere('a.option IS NOT NULL')
+      .groupBy('a.optionId')
+      .getRawMany<{ optionId: string; count: string }>();
+
+    const total = rows.reduce((sum, r) => sum + Number.parseInt(r.count, 10), 0);
+    if (total >= GameService.AUDIENCE_MIN_SAMPLES) {
+      const distribution: Record<number, number> = {};
+      for (const r of rows) {
+        distribution[Number.parseInt(r.optionId, 10)] = Math.round(
+          (Number.parseInt(r.count, 10) / total) * 100,
+        );
+      }
+      return distribution;
+    }
+
+    // 2) Fallback: simula "placar da galera" com viés para a resposta correta.
     const question = await this.questionsService.findOne(questionId);
     const correctId = question.answerOptionId;
     const options = question.options;
-    // Plateia acerta na maioria, mas com ruido — imita o "placar da galera".
     const correctShare = 55 + Math.floor(Math.random() * 20); // 55-74%
     const remaining = 100 - correctShare;
     const others = options.filter((o) => o.id !== correctId);

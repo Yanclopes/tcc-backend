@@ -10,7 +10,7 @@ export class UsePowerupDto {
     enum: SUPPORTED_POWERUPS,
     example: 'fifty',
     description:
-      "'fifty' (elimina 2 alternativas), 'skip' (pula a pergunta), 'audience' (placar da galera).",
+      "'fifty' (elimina 2 alternativas), 'skip' (troca a pergunta), 'audience' (placar da galera).",
   })
   @IsIn(SUPPORTED_POWERUPS as unknown as string[])
   powerup: PowerupName;
