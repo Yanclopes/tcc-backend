@@ -105,6 +105,7 @@ jobs:
             sleep 2
           done
           docker compose -f docker-compose.prod.yml exec -T api npm run migration:run:prod
+          docker compose -f docker-compose.prod.yml exec -T api npm run seed:prod
           docker image prune -f
           '
           DEPLOY_SCRIPT
