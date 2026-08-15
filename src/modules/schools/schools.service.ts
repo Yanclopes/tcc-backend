@@ -11,6 +11,8 @@ import {
   ApproveSuggestionDto,
   CreateSchoolDto,
   CreateSchoolSuggestionDto,
+  LinkSuggestionDto,
+  RejectSuggestionDto,
   UpdateSchoolDto,
 } from './dto/school.dto';
 import { SchoolSuggestion, SuggestionStatus } from './entities/school-suggestion.entity';
@@ -123,7 +125,11 @@ export class SchoolsService {
     if (suggestion.suggestedBy) {
       await this.userRepo.update(
         { id: suggestion.suggestedBy.id },
-        { school: { id: school.id } as School },
+        {
+          school: { id: school.id } as School,
+          needsSchoolReregistration: false,
+          schoolRejectionReason: null,
+        },
       );
     }
 
@@ -144,20 +150,86 @@ export class SchoolsService {
     return school;
   }
 
-  async rejectSuggestion(id: number, actorUserId: number): Promise<SchoolSuggestion> {
+  /**
+   * Vincula a sugestao a uma escola JA existente no catalogo. Cobre o caso em
+   * que o aluno digitou o nome errado ou nao encontrou a escola na busca.
+   * O aluno passa a apontar para a escola existente — NAO cria nova e NAO
+   * penaliza o aluno com re-registro.
+   */
+  async linkSuggestionToExisting(
+    id: number,
+    dto: LinkSuggestionDto,
+    actorUserId: number,
+  ): Promise<School> {
+    const suggestion = await this.getSuggestion(id);
+    if (suggestion.status !== 'pending') {
+      throw new BadRequestException('Esta sugestao ja foi resolvida.');
+    }
+    const school = await this.findOne(dto.schoolId);
+
+    if (suggestion.suggestedBy) {
+      await this.userRepo.update(
+        { id: suggestion.suggestedBy.id },
+        {
+          school: { id: school.id } as School,
+          needsSchoolReregistration: false,
+          schoolRejectionReason: null,
+        },
+      );
+    }
+
+    suggestion.status = 'linked';
+    suggestion.createdSchool = school;
+    suggestion.resolvedAt = new Date();
+    await this.suggestionRepo.save(suggestion);
+    await this.audit.record({
+      actorUserId,
+      action: AuditAction.SCHOOL_SUGGESTION_LINKED,
+      targetType: 'school_suggestion',
+      targetId: id,
+      metadata: {
+        linkedSchoolId: school.id,
+        suggestedByUserId: suggestion.suggestedBy?.id ?? null,
+      },
+    });
+    return school;
+  }
+
+  /**
+   * Rejeita a sugestao com um motivo. Se ha aluno vinculado, marca a flag de
+   * re-registro forcado e persiste o motivo — o aluno vera no proximo login
+   * e sera obrigado a refazer a escolha antes de qualquer outra acao.
+   */
+  async rejectSuggestion(
+    id: number,
+    dto: RejectSuggestionDto,
+    actorUserId: number,
+  ): Promise<SchoolSuggestion> {
     const suggestion = await this.getSuggestion(id);
     if (suggestion.status !== 'pending') {
       throw new BadRequestException('Esta sugestao ja foi resolvida.');
     }
     suggestion.status = 'rejected';
+    suggestion.rejectionReason = dto.reason;
     suggestion.resolvedAt = new Date();
     const saved = await this.suggestionRepo.save(suggestion);
+
+    if (suggestion.suggestedBy) {
+      await this.userRepo.update(
+        { id: suggestion.suggestedBy.id },
+        { needsSchoolReregistration: true, schoolRejectionReason: dto.reason },
+      );
+    }
+
     await this.audit.record({
       actorUserId,
       action: AuditAction.SCHOOL_SUGGESTION_REJECTED,
       targetType: 'school_suggestion',
       targetId: id,
-      metadata: { suggestedByUserId: suggestion.suggestedBy?.id ?? null },
+      metadata: {
+        suggestedByUserId: suggestion.suggestedBy?.id ?? null,
+        reason: dto.reason,
+      },
     });
     return saved;
   }

@@ -55,6 +55,8 @@ describe('AuthService', () => {
         name: 'Maria',
         email: 'maria@escola.edu.br',
         role: 'user',
+        needsSchoolReregistration: false,
+        schoolRejectionReason: null,
       });
     });
 

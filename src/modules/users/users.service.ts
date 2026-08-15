@@ -13,6 +13,8 @@ import { AuditService } from '../audit/audit.service';
 import { AppRole, DEFAULT_ROLE } from '../auth/role.enum';
 import { GameAnswer } from '../game/entities/game-answer.entity';
 import { Game } from '../game/entities/game.entity';
+import { City } from '../geo/entities/city.entity';
+import { State } from '../geo/entities/state.entity';
 import { Ranking } from '../ranking/entities/ranking.entity';
 import { SchoolSuggestion } from '../schools/entities/school-suggestion.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -62,11 +64,40 @@ export class UsersService {
       email: dto.email,
       password: passwordHash,
       school: dto.schoolId ? ({ id: dto.schoolId } as AppUser['school']) : null,
+      state: { id: dto.stateId } as State,
+      city: { id: dto.cityId } as City,
       educationLevel: { id: dto.educationLevelId } as AppUser['educationLevel'],
       role,
     });
 
     return this.userRepository.save(user);
+  }
+
+  /**
+   * Atualiza os dados regionais do proprio usuario. Usado tanto no fluxo comum
+   * de perfil quanto no re-registro forcado apos rejeicao de sugestao — nesse
+   * caso limpa a flag e o motivo apos a atualizacao.
+   */
+  async updateOwnRegion(
+    userId: number,
+    input: { stateId: number; cityId: number; schoolId?: number | null },
+  ): Promise<AppUser> {
+    const user = await this.findById(userId);
+    user.state = { id: input.stateId } as State;
+    user.city = { id: input.cityId } as City;
+    user.school = input.schoolId != null ? ({ id: input.schoolId } as AppUser['school']) : null;
+    user.needsSchoolReregistration = false;
+    user.schoolRejectionReason = null;
+    await this.userRepository.save(user);
+    return this.findById(userId);
+  }
+
+  /** Marca o aluno para re-registro forcado, guardando o motivo da rejeicao. */
+  async flagForSchoolReregistration(userId: number, reason: string): Promise<void> {
+    await this.userRepository.update(
+      { id: userId },
+      { needsSchoolReregistration: true, schoolRejectionReason: reason },
+    );
   }
 
   /** Busca por e-mail com hash de senha E papel (para login/JWT). */
@@ -82,7 +113,13 @@ export class UsersService {
   async findById(id: number): Promise<AppUser> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: { school: true, educationLevel: true, role: true },
+      relations: {
+        school: true,
+        state: true,
+        city: { state: true },
+        educationLevel: true,
+        role: true,
+      },
     });
     if (!user) {
       throw new NotFoundException(`Usuario ${id} nao encontrado.`);
@@ -93,7 +130,13 @@ export class UsersService {
   /** Lista usuarios (uso administrativo). */
   findAll(): Promise<AppUser[]> {
     return this.userRepository.find({
-      relations: { role: true, school: true, educationLevel: true },
+      relations: {
+        role: true,
+        school: true,
+        state: true,
+        city: { state: true },
+        educationLevel: true,
+      },
       order: { id: 'ASC' },
     });
   }

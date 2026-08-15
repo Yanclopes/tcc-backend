@@ -29,6 +29,16 @@ export class AuthService {
     if (dto.suggestedSchoolName && !dto.suggestedSchoolCityId) {
       throw new BadRequestException('Informe a cidade da escola sugerida (suggestedSchoolCityId).');
     }
+    if (!dto.schoolId && !dto.suggestedSchoolName) {
+      throw new BadRequestException(
+        'Informe uma escola (schoolId) ou envie uma sugestao (suggestedSchoolName + suggestedSchoolCityId).',
+      );
+    }
+    if (dto.schoolId && dto.suggestedSchoolName) {
+      throw new BadRequestException(
+        'Informe apenas UM: schoolId (escola existente) OU suggestedSchoolName (sugestao).',
+      );
+    }
 
     const user = await this.usersService.create(dto);
 
@@ -72,7 +82,14 @@ export class AuthService {
     const payload: JwtPayload = { sub: user.id, email: user.email, role };
     return {
       accessToken: this.jwtService.sign(payload),
-      user: { id: user.id, name: user.name, email: user.email, role },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role,
+        needsSchoolReregistration: user.needsSchoolReregistration ?? false,
+        schoolRejectionReason: user.schoolRejectionReason ?? null,
+      },
     };
   }
 }

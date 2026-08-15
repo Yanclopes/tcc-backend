@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '../audit/audit.module';
 import { GameAnswer } from '../game/entities/game-answer.entity';
 import { Game } from '../game/entities/game.entity';
 import { Ranking } from '../ranking/entities/ranking.entity';
 import { SchoolSuggestion } from '../schools/entities/school-suggestion.entity';
+import { SchoolsModule } from '../schools/schools.module';
 import { EducationLevel } from './entities/education-level.entity';
 import { AppUser } from './entities/app-user.entity';
 import { Role } from './entities/role.entity';
@@ -26,6 +27,7 @@ import { UsersService } from './users.service';
       SchoolSuggestion,
     ]),
     AuditModule,
+    forwardRef(() => SchoolsModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],

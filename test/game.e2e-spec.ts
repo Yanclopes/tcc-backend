@@ -59,6 +59,10 @@ describe('Fluxo de jogo autenticado (e2e)', () => {
         email,
         password,
         educationLevelId,
+        // Regionais obrigatorios; ids do seed inicial (Brasil/SC/Rio do Sul/UNIDAVI).
+        stateId: 1,
+        cityId: 1,
+        schoolId: 1,
         consentVersion: '2026-01-v1',
       })
       .expect(201);

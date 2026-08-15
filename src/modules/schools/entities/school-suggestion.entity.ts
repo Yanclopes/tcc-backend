@@ -11,7 +11,7 @@ import { City } from '../../geo/entities/city.entity';
 import { School } from '../../geo/entities/school.entity';
 import { AppUser } from '../../users/entities/app-user.entity';
 
-export type SuggestionStatus = 'pending' | 'approved' | 'rejected';
+export type SuggestionStatus = 'pending' | 'approved' | 'rejected' | 'linked';
 
 /**
  * Sugestao de escola feita por um aluno no cadastro, quando a escola dele ainda
@@ -41,9 +41,14 @@ export class SchoolSuggestion {
   @JoinColumn({ name: 'suggested_by' })
   suggestedBy?: AppUser | null;
 
-  @ApiProperty({ enum: ['pending', 'approved', 'rejected'], example: 'pending' })
+  @ApiProperty({ enum: ['pending', 'approved', 'rejected', 'linked'], example: 'pending' })
   @Column({ type: 'varchar', default: 'pending' })
   status: SuggestionStatus;
+
+  /** Motivo informado pelo admin ao rejeitar (visivel ao aluno no re-registro). */
+  @ApiProperty({ nullable: true })
+  @Column({ name: 'rejection_reason', type: 'text', nullable: true })
+  rejectionReason?: string | null;
 
   /** Escola criada a partir desta sugestao (preenchida na aprovacao). */
   @ManyToOne(() => School, { nullable: true, onDelete: 'SET NULL', eager: true })

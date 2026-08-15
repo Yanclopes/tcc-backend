@@ -18,7 +18,22 @@ export class CreateUserDto {
   @MaxLength(72) // limite do bcrypt
   password: string;
 
-  @ApiPropertyOptional({ example: 1, description: 'Id da escola (opcional)' })
+  // Estado e cidade sao obrigatorios: sustentam o recorte regional previsto
+  // pela pesquisa mesmo quando a escola ainda esta em fase de sugestao.
+  @ApiProperty({ example: 1, description: 'Id do estado (obrigatorio)' })
+  @IsInt()
+  stateId: number;
+
+  @ApiProperty({ example: 1, description: 'Id da cidade (obrigatoria; deve pertencer ao estado)' })
+  @IsInt()
+  cityId: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description:
+      'Id da escola. No cadastro, ou informar schoolId, ou informar uma sugestao ' +
+      '(suggestedSchoolName + suggestedSchoolCityId). Pelo menos um dos dois e exigido.',
+  })
   @IsOptional()
   @IsInt()
   schoolId?: number;

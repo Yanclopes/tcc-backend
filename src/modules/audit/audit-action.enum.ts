@@ -8,7 +8,9 @@ export enum AuditAction {
   USER_SELF_DELETED = 'user.self_deleted',
   USER_DATA_EXPORTED = 'user.data_exported',
   SCHOOL_SUGGESTION_APPROVED = 'school.suggestion_approved',
+  SCHOOL_SUGGESTION_LINKED = 'school.suggestion_linked',
   SCHOOL_SUGGESTION_REJECTED = 'school.suggestion_rejected',
+  USER_SCHOOL_UPDATED = 'user.school_updated',
   QUESTION_ACTIVATED = 'question.activated',
   QUESTION_DEACTIVATED = 'question.deactivated',
 }

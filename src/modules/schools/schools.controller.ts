@@ -24,6 +24,8 @@ import {
   ApproveSuggestionDto,
   CreateSchoolDto,
   CreateSchoolSuggestionDto,
+  LinkSuggestionDto,
+  RejectSuggestionDto,
   UpdateSchoolDto,
 } from './dto/school.dto';
 import { SchoolSuggestion, SuggestionStatus } from './entities/school-suggestion.entity';
@@ -73,16 +75,34 @@ export class SchoolsController {
     return this.schoolsService.approveSuggestion(id, dto, actor.userId);
   }
 
+  @Post('suggestions/:id/link')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(AppRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Vincula a sugestao a uma escola existente (aluno digitou errado ou nao encontrou)',
+  })
+  link(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: LinkSuggestionDto,
+    @CurrentUser() actor: JwtUser,
+  ): Promise<School> {
+    return this.schoolsService.linkSuggestionToExisting(id, dto, actor.userId);
+  }
+
   @Post('suggestions/:id/reject')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(AppRole.ADMIN)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Rejeita a sugestao de escola (somente admin)' })
+  @ApiOperation({
+    summary: 'Rejeita a sugestao com motivo (aluno sera forcado a refazer no proximo login)',
+  })
   reject(
     @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RejectSuggestionDto,
     @CurrentUser() actor: JwtUser,
   ): Promise<SchoolSuggestion> {
-    return this.schoolsService.rejectSuggestion(id, actor.userId);
+    return this.schoolsService.rejectSuggestion(id, dto, actor.userId);
   }
 
   // ----- CRUD de escolas -----

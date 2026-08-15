@@ -10,8 +10,19 @@ export class AuthUserDto {
   @ApiProperty({ example: 'maria@escola.edu.br' })
   email: string;
 
-  @ApiProperty({ example: 'user', enum: ['user', 'admin'] })
+  @ApiProperty({ example: 'user', enum: ['user', 'admin', 'master'] })
   role: string;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Quando true, a ultima sugestao de escola foi rejeitada e o aluno precisa ' +
+      'refazer a escolha no proximo acesso antes de qualquer outra acao.',
+  })
+  needsSchoolReregistration: boolean;
+
+  @ApiProperty({ nullable: true, example: null })
+  schoolRejectionReason?: string | null;
 }
 
 export class AuthResponseDto {

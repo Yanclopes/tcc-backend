@@ -52,6 +52,51 @@ export class CreateSchoolSuggestionDto {
   note?: string;
 }
 
+/** Vincula a sugestao a uma escola ja existente no catalogo (o admin identificou duplicidade). */
+export class LinkSuggestionDto {
+  @ApiProperty({ example: 1, description: 'Id da escola existente a ser vinculada.' })
+  @IsInt()
+  schoolId: number;
+}
+
+/** Rejeicao de sugestao — o motivo e apresentado ao aluno no proximo login. */
+export class RejectSuggestionDto {
+  @ApiProperty({
+    example: 'Nome muito generico — informe o nome completo da escola.',
+    description: 'Motivo da rejeicao (obrigatorio; visivel ao aluno no re-registro).',
+  })
+  @IsString()
+  @MinLength(4)
+  @MaxLength(500)
+  reason: string;
+}
+
+/** Payload para o aluno reajustar seu perfil regional apos rejeicao. */
+export class UpdateOwnSchoolDto {
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  stateId: number;
+
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  cityId: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Escola existente (ou omitir e enviar sugestao).',
+  })
+  @IsOptional()
+  @IsInt()
+  schoolId?: number;
+
+  @ApiPropertyOptional({ example: 'EEB Nova Escola' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(160)
+  suggestedSchoolName?: string;
+}
+
 /** Dados usados pelo admin ao aprovar uma sugestao (pode ajustar antes de criar). */
 export class ApproveSuggestionDto {
   @ApiPropertyOptional({

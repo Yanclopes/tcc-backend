@@ -12,11 +12,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuditAction } from '../audit/audit-action.enum';
+import { AuditService } from '../audit/audit.service';
 import { CurrentUser, JwtUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AppRole } from '../auth/role.enum';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { SchoolsService } from '../schools/schools.service';
+import { UpdateOwnSchoolDto } from '../schools/dto/school.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { SetRoleDto } from './dto/set-role.dto';
 import { UserDataExportDto } from './dto/user-data-export.dto';
@@ -28,12 +32,60 @@ import { UsersService } from './users.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly schoolsService: SchoolsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Retorna o perfil do usuario autenticado' })
   me(@CurrentUser() user: JwtUser): Promise<AppUser> {
     return this.usersService.findById(user.userId);
+  }
+
+  @Patch('me/school')
+  @ApiOperation({
+    summary: 'Atualiza estado/cidade/escola do proprio usuario (usado no completar-perfil)',
+    description:
+      'Aceita schoolId (escola existente) OU suggestedSchoolName (nova sugestao). ' +
+      'Limpa a flag needsSchoolReregistration ao concluir. Sugestoes rejeitadas ' +
+      'anteriormente NAO sao apagadas — a auditoria preserva o historico.',
+  })
+  async updateOwnSchool(
+    @CurrentUser() user: JwtUser,
+    @Body() dto: UpdateOwnSchoolDto,
+  ): Promise<AppUser> {
+    if (!dto.schoolId && !dto.suggestedSchoolName) {
+      throw new Error('Informe schoolId ou suggestedSchoolName.');
+    }
+    if (dto.schoolId && dto.suggestedSchoolName) {
+      throw new Error('Informe apenas UM: schoolId OU suggestedSchoolName.');
+    }
+    const updated = await this.usersService.updateOwnRegion(user.userId, {
+      stateId: dto.stateId,
+      cityId: dto.cityId,
+      schoolId: dto.schoolId ?? null,
+    });
+    if (dto.suggestedSchoolName) {
+      await this.schoolsService.createSuggestion(
+        { name: dto.suggestedSchoolName, cityId: dto.cityId },
+        user.userId,
+      );
+    }
+    await this.audit.record({
+      actorUserId: user.userId,
+      action: AuditAction.USER_SCHOOL_UPDATED,
+      targetType: 'app_user',
+      targetId: user.userId,
+      metadata: {
+        stateId: dto.stateId,
+        cityId: dto.cityId,
+        schoolId: dto.schoolId ?? null,
+        suggestion: dto.suggestedSchoolName ?? null,
+      },
+    });
+    return updated;
   }
 
   @Get('me/export')

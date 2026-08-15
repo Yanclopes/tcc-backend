@@ -170,6 +170,8 @@ async function run(): Promise<void> {
         password: await bcrypt.hash(adminPassword, 10),
         role: masterRole,
         school: unidavi,
+        state: sc,
+        city: rioDoSul,
         educationLevel: levelEntities[3], // Ensino Superior — obrigatorio
       }),
     );
