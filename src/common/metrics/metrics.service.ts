@@ -25,8 +25,11 @@ export class MetricsService implements OnModuleInit {
   });
 
   onModuleInit(): void {
-    // Metricas padrao do Node (event loop lag, GC, memoria, CPU).
-    collectDefaultMetrics({ register: this.registry, prefix: 'nodejs_' });
+    // Metricas padrao do prom-client (event loop, GC, memoria, CPU do processo).
+    // NAO aplicar 'prefix' aqui: as metricas ja vem com nomes canonicos
+    // (process_* para POSIX, nodejs_* para V8/libuv) — casam com dashboards
+    // publicos como o "NodeJS Application Dashboard".
+    collectDefaultMetrics({ register: this.registry });
   }
 
   async render(): Promise<string> {
