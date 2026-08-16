@@ -1,0 +1,39 @@
+// =====================================================================
+// Grafana Alloy — coletor local
+// Faz scrape do endpoint /metrics do backend (Basic Auth) a cada 60s e
+// envia via remote_write para o Prometheus hospedado no Grafana Cloud.
+//
+// Envs esperadas (todas ja no .env do EC2):
+//   METRICS_USER, METRICS_PASSWORD              — Basic Auth do endpoint local
+//   GRAFANA_CLOUD_METRICS_URL                    — URL de remote_write
+//   GRAFANA_CLOUD_METRICS_USER                   — instance id do stack
+//   GRAFANA_CLOUD_METRICS_API_KEY                — API key (glc_...)
+// =====================================================================
+
+prometheus.scrape "api_local" {
+  targets = [
+    { __address__ = "api:3000", instance = "desafio-ods-api" },
+  ]
+  metrics_path    = "/metrics"
+  scrape_interval = "60s"
+  scrape_timeout  = "20s"
+
+  basic_auth {
+    username = sys.env("METRICS_USER")
+    password = sys.env("METRICS_PASSWORD")
+  }
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    name = "grafana-cloud-hosted-prometheus"
+    url  = sys.env("GRAFANA_CLOUD_METRICS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_METRICS_USER")
+      password = sys.env("GRAFANA_CLOUD_METRICS_API_KEY")
+    }
+  }
+}

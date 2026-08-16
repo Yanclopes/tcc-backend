@@ -65,9 +65,32 @@ services:
     networks:
       - ods_net
 
+  # Grafana Alloy: coletor local que faz scrape do /metrics (com Basic Auth) e
+  # empurra para o Prometheus hospedado no Grafana Cloud via remote_write.
+  # Nao expoe nada publicamente — comunicacao com o api e via rede interna.
+  alloy:
+    image: grafana/alloy:latest
+    container_name: ods_alloy
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+    networks:
+      - ods_net
+
 volumes:
   postgres_data:
   redis_data:
+  alloy_data:
 
 networks:
   ods_net:
