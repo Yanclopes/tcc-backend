@@ -6,6 +6,7 @@
 export enum AuditAction {
   USER_ROLE_CHANGED = 'user.role_changed',
   USER_SELF_DELETED = 'user.self_deleted',
+  USER_ANONYMIZED = 'user.anonymized',
   USER_DATA_EXPORTED = 'user.data_exported',
   USER_CONSENT_REACCEPTED = 'user.consent_reaccepted',
   USER_LOGIN_BLOCKED = 'user.login_blocked',

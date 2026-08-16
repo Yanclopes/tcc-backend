@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { In, Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { AuditAction } from '../audit/audit-action.enum';
 import { AuditService } from '../audit/audit.service';
 import { AppRole, DEFAULT_ROLE } from '../auth/role.enum';
@@ -283,6 +284,64 @@ export class UsersService {
     });
 
     return payload;
+  }
+
+  /**
+   * LGPD L3 — anonimiza a propria conta (alternativa ao esquecimento total).
+   * Substitui PII (nome/e-mail/senha) por valores anonimos, marca is_anonymized
+   * e preserva dados demograficos + coleta bruta (games, respostas, ranking)
+   * como amostra anonima da pesquisa. Login fica bloqueado apos.
+   */
+  async anonymizeSelf(userId: number, password: string): Promise<void> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .leftJoinAndSelect('user.role', 'role')
+      .where('user.id = :userId', { userId })
+      .getOne();
+    if (!user) throw new NotFoundException(`Usuario ${userId} nao encontrado.`);
+
+    if (user.isAnonymized) {
+      throw new BadRequestException('Conta ja anonimizada.');
+    }
+    if (user.role?.name === AppRole.MASTER) {
+      throw new BadRequestException(
+        'O usuario master nao pode se anonimizar. Transfira o papel antes.',
+      );
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Senha incorreta.');
+    }
+
+    // Auditoria ANTES da mutacao para preservar o e-mail original na trilha.
+    await this.audit.record({
+      actorUserId: userId,
+      action: AuditAction.USER_ANONYMIZED,
+      targetType: 'app_user',
+      targetId: userId,
+      metadata: { originalEmail: user.email },
+    });
+
+    // Gera identificadores anonimos deterministicos. Uuid v4 no e-mail evita
+    // colisao com o UNIQUE index; senha aleatoria torna login impossivel.
+    const anonymousSuffix = uuidv4();
+    const randomPasswordHash = await bcrypt.hash(uuidv4() + uuidv4(), BCRYPT_ROUNDS);
+
+    await this.userRepository.update(
+      { id: userId },
+      {
+        name: 'Participante Anonimo',
+        email: `anonimo-${anonymousSuffix}@anonimizado.local`,
+        password: randomPasswordHash,
+        isAnonymized: true,
+        anonymizedAt: new Date(),
+        // Zera flags operacionais que nao fazem mais sentido pra usuario anon.
+        needsSchoolReregistration: false,
+        schoolRejectionReason: null,
+      },
+    );
   }
 
   /**

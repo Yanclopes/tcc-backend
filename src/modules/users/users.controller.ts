@@ -133,6 +133,19 @@ export class UsersController {
     return this.usersService.deleteSelf(user.userId, dto.password);
   }
 
+  @Post('me/anonymize')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Anonimiza a propria conta (LGPD L3 — alternativa ao esquecimento)',
+    description:
+      'Exige a senha atual. Substitui nome, e-mail e senha por valores anonimos e bloqueia ' +
+      'login futuro. Preserva estado, cidade, escola, escolaridade e a coleta bruta ' +
+      '(partidas, respostas, ranking) como amostra anonima da pesquisa. IRREVERSIVEL.',
+  })
+  anonymizeMe(@CurrentUser() user: JwtUser, @Body() dto: DeleteAccountDto): Promise<void> {
+    return this.usersService.anonymizeSelf(user.userId, dto.password);
+  }
+
   @Get()
   @Roles(AppRole.ADMIN)
   @ApiOperation({ summary: 'Lista usuarios (somente admin)' })

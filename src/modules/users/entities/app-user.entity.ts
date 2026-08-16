@@ -69,6 +69,19 @@ export class AppUser {
   @Column({ name: 'school_rejection_reason', type: 'text', nullable: true })
   schoolRejectionReason?: string | null;
 
+  /**
+   * LGPD L3 — flag de anonimizacao. Quando true, o registro foi despersonalizado
+   * (name/email/password substituidos por valores anonimos) e o login e bloqueado.
+   * Dados demograficos e coleta bruta ficam preservados como amostra anonima.
+   */
+  @ApiProperty({ example: false })
+  @Column({ name: 'is_anonymized', type: 'boolean', default: false })
+  isAnonymized: boolean;
+
+  @ApiProperty({ nullable: true })
+  @Column({ name: 'anonymized_at', type: 'timestamp', nullable: true })
+  anonymizedAt?: Date | null;
+
   @ManyToOne(() => Role, (role) => role.users, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'role' })
   role?: Role | null;

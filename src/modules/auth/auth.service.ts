@@ -92,6 +92,12 @@ export class AuthService {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     const passwordMatches = user ? await bcrypt.compare(dto.password, user.password) : false;
 
+    // LGPD L3: contas anonimizadas nao podem mais fazer login (senha eh
+    // aleatoria e o registro nao representa mais o titular).
+    if (user?.isAnonymized) {
+      throw new UnauthorizedException('Credenciais invalidas.');
+    }
+
     if (!user || !passwordMatches) {
       const fails = await this.redis.incrWithTtl(failKey, LOGIN_FAIL_WINDOW_S);
       if (fails >= LOGIN_FAIL_LIMIT) {
