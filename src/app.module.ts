@@ -3,8 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoggerModule } from 'nestjs-pino';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { RedisModule } from './common/redis/redis.module';
+import { MetricsModule } from './common/metrics/metrics.module';
 import configuration, { DatabaseConfig } from './config/configuration';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -28,6 +30,31 @@ import { UsersModule } from './modules/users/users.module';
       load: [configuration],
     }),
 
+    // Logs estruturados JSON (Pino). Em dev, formata legivel; em prod, JSON puro
+    // pronto para agregacao (CloudWatch/Loki/etc.). Correlaciona por req.id.
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        autoLogging: {
+          ignore: (req) => {
+            const url = (req as { url?: string }).url ?? '';
+            return url === '/health' || url === '/metrics';
+          },
+        },
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? {
+                target: 'pino-pretty',
+                options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
+              }
+            : undefined,
+        redact: {
+          paths: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password'],
+          censor: '[REDACTED]',
+        },
+      },
+    }),
+
     // Conexao com o PostgreSQL. Entidades carregadas por autoLoad dos modulos.
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
@@ -49,6 +76,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
 
     RedisModule,
+    MetricsModule,
 
     // Rate limiting global — bucket unico e generoso (120 req/min por IP).
     // Endpoints sensiveis (auth) diminuem o limite com @Throttle override.

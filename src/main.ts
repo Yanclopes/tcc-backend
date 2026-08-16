@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // Substitui o logger padrao pelo Pino (JSON estruturado; pretty apenas em dev).
+  app.useLogger(app.get(Logger));
   const config = app.get(ConfigService);
   const appConfig = config.get<AppConfig>('app')!;
 
@@ -16,7 +19,7 @@ async function bootstrap() {
   app.use(helmet({ contentSecurityPolicy: false }));
 
   // Prefixo global (ex.: /api/v1). O /health fica fora para o healthcheck.
-  app.setGlobalPrefix(appConfig.apiPrefix, { exclude: ['health'] });
+  app.setGlobalPrefix(appConfig.apiPrefix, { exclude: ['health', 'metrics'] });
 
   // CORS liberado apenas para as origens configuradas.
   app.enableCors({
