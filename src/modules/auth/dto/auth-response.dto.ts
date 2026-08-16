@@ -23,6 +23,20 @@ export class AuthUserDto {
 
   @ApiProperty({ nullable: true, example: null })
   schoolRejectionReason?: string | null;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'Quando true, a versao vigente do termo de consentimento LGPD e mais recente que a ' +
+      'ultima aceita pelo usuario. O front-end deve exigir novo aceite antes de continuar.',
+  })
+  needsConsentReacceptance: boolean;
+
+  @ApiProperty({
+    example: '2026-01-v1',
+    description: 'Versao atual do termo (env PRIVACY_VERSION).',
+  })
+  currentConsentVersion: string;
 }
 
 export class AuthResponseDto {

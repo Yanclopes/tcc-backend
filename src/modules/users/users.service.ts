@@ -100,6 +100,19 @@ export class UsersService {
     );
   }
 
+  /**
+   * Registra a aceitacao de uma nova versao do termo de consentimento (LGPD L5).
+   * Cria uma nova linha em user_consent — o historico integral e preservado.
+   */
+  async acceptConsent(userId: number, consentVersion: string): Promise<UserConsent> {
+    return this.consentRepository.save(
+      this.consentRepository.create({
+        user: { id: userId } as AppUser,
+        consentVersion,
+      }),
+    );
+  }
+
   /** Busca por e-mail com hash de senha E papel (para login/JWT). */
   async findByEmailWithPassword(email: string): Promise<AppUser | null> {
     return this.userRepository

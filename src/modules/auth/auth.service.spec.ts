@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
+import { RedisService } from '../../common/redis/redis.service';
+import { AuditService } from '../audit/audit.service';
 import { SchoolsService } from '../schools/schools.service';
 import { UserConsent } from '../users/entities/user-consent.entity';
 import { UsersService } from '../users/users.service';
@@ -25,8 +27,23 @@ describe('AuthService', () => {
         { provide: SchoolsService, useValue: { createSuggestion: jest.fn() } },
         { provide: JwtService, useValue: { sign: jest.fn(() => 'signed.jwt.token') } },
         {
+          provide: RedisService,
+          useValue: {
+            exists: jest.fn().mockResolvedValue(false),
+            ttl: jest.fn().mockResolvedValue(-2),
+            incrWithTtl: jest.fn().mockResolvedValue(1),
+            setJson: jest.fn().mockResolvedValue(undefined),
+            del: jest.fn().mockResolvedValue(0),
+          },
+        },
+        { provide: AuditService, useValue: { record: jest.fn().mockResolvedValue(undefined) } },
+        {
           provide: getRepositoryToken(UserConsent),
-          useValue: { create: jest.fn((v) => v), save: jest.fn((v) => Promise.resolve(v)) },
+          useValue: {
+            create: jest.fn((v) => v),
+            save: jest.fn((v) => Promise.resolve(v)),
+            findOne: jest.fn().mockResolvedValue(null),
+          },
         },
       ],
     }).compile();
@@ -57,6 +74,8 @@ describe('AuthService', () => {
         role: 'user',
         needsSchoolReregistration: false,
         schoolRejectionReason: null,
+        needsConsentReacceptance: true,
+        currentConsentVersion: '2026-01-v1',
       });
     });
 

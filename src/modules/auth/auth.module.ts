@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtConfig } from '../../config/configuration';
+import { RedisModule } from '../../common/redis/redis.module';
+import { AuditModule } from '../audit/audit.module';
 import { SchoolsModule } from '../schools/schools.module';
 import { UserConsent } from '../users/entities/user-consent.entity';
 import { UsersModule } from '../users/users.module';
@@ -15,6 +17,8 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     UsersModule,
     SchoolsModule,
+    RedisModule,
+    AuditModule,
     PassportModule,
     TypeOrmModule.forFeature([UserConsent]),
     JwtModule.registerAsync({

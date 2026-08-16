@@ -1,0 +1,44 @@
+# Atualizacoes automaticas de dependencias.
+# Roda semanalmente; abre PRs agrupados para reduzir ruido no repo.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      # Um PR por categoria — menos ruido, mais fácil de revisar.
+      backend-runtime:
+        patterns:
+          - "@nestjs/*"
+          - "typeorm"
+          - "pg"
+          - "ioredis"
+          - "socket.io*"
+        update-types:
+          - minor
+          - patch
+      dev-tooling:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier"
+          - "jest"
+          - "ts-node"
+          - "typescript"
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - ci

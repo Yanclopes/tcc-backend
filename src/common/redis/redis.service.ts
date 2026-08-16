@@ -59,4 +59,18 @@ export class RedisService {
   async sismember(key: string, member: string): Promise<boolean> {
     return (await this.client.sismember(key, member)) === 1;
   }
+
+  /** Incremento atomico; se for a primeira gravacao, seta o TTL. */
+  async incrWithTtl(key: string, ttlSeconds: number): Promise<number> {
+    const value = await this.client.incr(key);
+    if (value === 1) {
+      await this.client.expire(key, ttlSeconds);
+    }
+    return value;
+  }
+
+  /** Retorna o TTL restante em segundos; -2 se a chave nao existe, -1 se sem TTL. */
+  async ttl(key: string): Promise<number> {
+    return this.client.ttl(key);
+  }
 }

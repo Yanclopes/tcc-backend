@@ -9,6 +9,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -42,6 +43,26 @@ export class UsersController {
   @ApiOperation({ summary: 'Retorna o perfil do usuario autenticado' })
   me(@CurrentUser() user: JwtUser): Promise<AppUser> {
     return this.usersService.findById(user.userId);
+  }
+
+  @Post('me/consent')
+  @ApiOperation({
+    summary: 'Aceita a versao vigente do termo LGPD (reconsentimento).',
+    description:
+      'Grava uma nova linha em user_consent com a versao atual (PRIVACY_VERSION do servidor). ' +
+      'O historico anterior e preservado. Auditado como user.consent_reaccepted.',
+  })
+  async acceptConsent(@CurrentUser() user: JwtUser): Promise<{ consentVersion: string }> {
+    const currentConsentVersion = process.env.PRIVACY_VERSION ?? '2026-01-v1';
+    await this.usersService.acceptConsent(user.userId, currentConsentVersion);
+    await this.audit.record({
+      actorUserId: user.userId,
+      action: AuditAction.USER_CONSENT_REACCEPTED,
+      targetType: 'app_user',
+      targetId: user.userId,
+      metadata: { consentVersion: currentConsentVersion },
+    });
+    return { consentVersion: currentConsentVersion };
   }
 
   @Patch('me/school')

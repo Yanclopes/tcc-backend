@@ -254,9 +254,7 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Rio do Oeste',
-    schools: [
-      { name: 'EEB Amadeu da Luz', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Amadeu da Luz', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Lontras',
@@ -284,9 +282,7 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Salete',
-    schools: [
-      { name: 'EEB Frei Silvestre', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Frei Silvestre', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Santa Terezinha',
@@ -296,15 +292,11 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Rio do Campo',
-    schools: [
-      { name: 'EEB Emílio Baumgart', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Emílio Baumgart', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Mirim Doce',
-    schools: [
-      { name: 'EEB Presidente Vargas', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Presidente Vargas', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Vitor Meireles',
@@ -320,9 +312,7 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Dona Emma',
-    schools: [
-      { name: 'EEB Frederico Hardt', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Frederico Hardt', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Presidente Nereu',
@@ -332,9 +322,7 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Vidal Ramos',
-    schools: [
-      { name: 'EEB Padre Anchieta', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Padre Anchieta', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Imbuia',
@@ -344,45 +332,31 @@ const AMAVI_REGION: CitySeed[] = [
   },
   {
     city: 'Petrolândia',
-    schools: [
-      { name: 'EEB Osvaldo Cruz', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Osvaldo Cruz', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Chapadão do Lageado',
-    schools: [
-      { name: 'EEB São José', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB São José', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Aurora',
-    schools: [
-      { name: 'EEB Padre Jacobs', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Padre Jacobs', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Atalanta',
-    schools: [
-      { name: 'EEB Adolfo Silveira', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Adolfo Silveira', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Agrolândia',
-    schools: [
-      { name: 'EEB Amâncio Câmara', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Amâncio Câmara', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Braço do Trombudo',
-    schools: [
-      { name: 'EEB Braço do Trombudo', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Braço do Trombudo', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
   {
     city: 'Witmarsum',
-    schools: [
-      { name: 'EEB Witmarsum', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
-    ],
+    schools: [{ name: 'EEB Witmarsum', levels: ['Ensino Fundamental II', 'Ensino Médio'] }],
   },
 ];
 
@@ -417,7 +391,9 @@ async function seedAmaviRegion(
       const schoolLevels = s.levels
         .map((n) => levelByName.get(n))
         .filter((l): l is EducationLevel => !!l);
-      await schoolRepo.save(schoolRepo.create({ name: s.name, city, educationLevels: schoolLevels }));
+      await schoolRepo.save(
+        schoolRepo.create({ name: s.name, city, educationLevels: schoolLevels }),
+      );
       schoolsCreated += 1;
     }
   }
