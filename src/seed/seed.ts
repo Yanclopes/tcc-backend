@@ -153,6 +153,9 @@ async function run(): Promise<void> {
     city: rioDoSul,
   });
 
+  // ----- Cidades e escolas do Alto Vale do Itajai (AMAVI) -----
+  await seedAmaviRegion(dataSource, sc, levelEntities);
+
   // ----- Administrador inicial -----
   // Credenciais via ambiente (com padrao apenas para desenvolvimento).
   const userRepo = dataSource.getRepository(AppUser);
@@ -188,6 +191,240 @@ async function run(): Promise<void> {
 
   console.log('Seed concluida com sucesso.');
   await dataSource.destroy();
+}
+
+// ==================================================================
+// Seed regional — Alto Vale do Itajai (AMAVI)
+// ==================================================================
+
+type SchoolSeed = { name: string; levels: string[] };
+type CitySeed = { city: string; schools: SchoolSeed[] };
+
+/**
+ * 28 municipios da AMAVI + escolas representativas. Escolas nao listadas aqui
+ * podem ser criadas pelo admin ou surgir via fluxo de sugestao dos alunos.
+ * Todos os textos estao com acentuacao pt-BR correta (bate com o nome oficial
+ * da unidade escolar; ajustar via CRUD /schools se necessario).
+ */
+const AMAVI_REGION: CitySeed[] = [
+  {
+    city: 'Rio do Sul',
+    schools: [
+      { name: 'EEB Paulo Zimmermann', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Padre José Maurício', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Wanda Krieger Gomes', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Deputado Nilton Kucker', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'IFC — Campus Rio do Sul', levels: ['Ensino Médio', 'Ensino Superior'] },
+      { name: 'SENAI Rio do Sul', levels: ['Ensino Médio', 'Ensino Superior'] },
+    ],
+  },
+  {
+    city: 'Ibirama',
+    schools: [
+      { name: 'EEB Governador Celso Ramos', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'IFC — Campus Ibirama', levels: ['Ensino Médio', 'Ensino Superior'] },
+    ],
+  },
+  {
+    city: 'Ituporanga',
+    schools: [
+      { name: 'EEB Frei Godofredo', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Vitor Meireles', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Presidente Getúlio',
+    schools: [
+      { name: 'EEB Presidente Roosevelt', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Adolfo Antônio Weber', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Taió',
+    schools: [
+      { name: 'EEB Feliciano Pires', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+      { name: 'EEB Nossa Senhora do Rosário', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Trombudo Central',
+    schools: [
+      { name: 'EEB Prefeito Frederico Kruger', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Rio do Oeste',
+    schools: [
+      { name: 'EEB Amadeu da Luz', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Lontras',
+    schools: [
+      { name: 'EEB Prof. José Rodolfo Petters', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Laurentino',
+    schools: [
+      { name: 'EEB Egídio José Cardoso Bicca', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Agronômica',
+    schools: [
+      { name: 'EEB Prof. Herbert Bertoldi', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Pouso Redondo',
+    schools: [
+      { name: 'EEB Aderbal Ramos da Silva', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Salete',
+    schools: [
+      { name: 'EEB Frei Silvestre', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Santa Terezinha',
+    schools: [
+      { name: 'EEB Nossa Senhora dos Prazeres', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Rio do Campo',
+    schools: [
+      { name: 'EEB Emílio Baumgart', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Mirim Doce',
+    schools: [
+      { name: 'EEB Presidente Vargas', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Vitor Meireles',
+    schools: [
+      { name: 'EEB Nossa Senhora da Salete', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'José Boiteux',
+    schools: [
+      { name: 'EEB Vidal Ramos Júnior', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Dona Emma',
+    schools: [
+      { name: 'EEB Frederico Hardt', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Presidente Nereu',
+    schools: [
+      { name: 'EEB Presidente Nereu Ramos', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Vidal Ramos',
+    schools: [
+      { name: 'EEB Padre Anchieta', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Imbuia',
+    schools: [
+      { name: 'EEB Antônio Wilson Loch', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Petrolândia',
+    schools: [
+      { name: 'EEB Osvaldo Cruz', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Chapadão do Lageado',
+    schools: [
+      { name: 'EEB São José', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Aurora',
+    schools: [
+      { name: 'EEB Padre Jacobs', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Atalanta',
+    schools: [
+      { name: 'EEB Adolfo Silveira', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Agrolândia',
+    schools: [
+      { name: 'EEB Amâncio Câmara', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Braço do Trombudo',
+    schools: [
+      { name: 'EEB Braço do Trombudo', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+  {
+    city: 'Witmarsum',
+    schools: [
+      { name: 'EEB Witmarsum', levels: ['Ensino Fundamental II', 'Ensino Médio'] },
+    ],
+  },
+];
+
+async function seedAmaviRegion(
+  ds: import('typeorm').DataSource,
+  scState: State,
+  levels: EducationLevel[],
+): Promise<void> {
+  const cityRepo = ds.getRepository(City);
+  const schoolRepo = ds.getRepository(School);
+  const levelByName = new Map(levels.map((l) => [l.name, l]));
+
+  let citiesCreated = 0;
+  let schoolsCreated = 0;
+
+  for (const entry of AMAVI_REGION) {
+    // upsert nao serve aqui: precisa filtrar tambem por state para evitar
+    // colidir com cidade homonima de outra UF em cargas futuras.
+    let city = await cityRepo.findOne({
+      where: { name: entry.city, state: { id: scState.id } },
+    });
+    if (!city) {
+      city = await cityRepo.save(cityRepo.create({ name: entry.city, state: scState }));
+      citiesCreated += 1;
+    }
+
+    for (const s of entry.schools) {
+      const already = await schoolRepo.findOne({
+        where: { name: s.name, city: { id: city.id } },
+      });
+      if (already) continue;
+      const schoolLevels = s.levels
+        .map((n) => levelByName.get(n))
+        .filter((l): l is EducationLevel => !!l);
+      await schoolRepo.save(schoolRepo.create({ name: s.name, city, educationLevels: schoolLevels }));
+      schoolsCreated += 1;
+    }
+  }
+
+  console.log(
+    `AMAVI: ${citiesCreated} novas cidades e ${schoolsCreated} novas escolas cadastradas.`,
+  );
 }
 
 /** Cria algumas perguntas iniciais (idempotente pelo texto). */
