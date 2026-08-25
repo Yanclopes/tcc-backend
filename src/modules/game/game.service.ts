@@ -333,28 +333,34 @@ export class GameService {
     // 1) Tenta usar a distribuicao real de respostas do banco.
     const rows = await this.answerRepo
       .createQueryBuilder('a')
-      .select('a.optionId', 'optionId')
+      // 'a.option' e o caminho da RELACAO (join column 'option'). Usar
+      // 'a.optionId' aqui nao resolve: essa propriedade nao existe na entidade
+      // e o TypeORM repassa o texto cru para o SQL -> "column a.optionid does
+      // not exist".
+      .select('a.option', 'optionId')
       .addSelect('COUNT(*)', 'count')
       .where('a.question = :questionId', { questionId })
       .andWhere('a.option IS NOT NULL')
-      .groupBy('a.optionId')
-      .getRawMany<{ optionId: string; count: string }>();
+      .groupBy('a.option')
+      .getRawMany<{ optionId: number; count: string }>();
+
+    const question = await this.questionsService.findOne(questionId);
+    const options = question.options;
 
     const total = rows.reduce((sum, r) => sum + Number.parseInt(r.count, 10), 0);
     if (total >= GameService.AUDIENCE_MIN_SAMPLES) {
-      const distribution: Record<number, number> = {};
+      // Parte de zero para TODAS as opcoes: opcao sem nenhuma resposta real
+      // precisa aparecer como 0%, e nao sumir da barra da plateia.
+      const real: Record<number, number> = {};
+      for (const option of options) real[option.id] = 0;
       for (const r of rows) {
-        distribution[Number.parseInt(r.optionId, 10)] = Math.round(
-          (Number.parseInt(r.count, 10) / total) * 100,
-        );
+        real[r.optionId] = Math.round((Number.parseInt(r.count, 10) / total) * 100);
       }
-      return distribution;
+      return real;
     }
 
     // 2) Fallback: simula "placar da galera" com viés para a resposta correta.
-    const question = await this.questionsService.findOne(questionId);
     const correctId = question.answerOptionId;
-    const options = question.options;
     const correctShare = 55 + Math.floor(Math.random() * 20); // 55-74%
     const remaining = 100 - correctShare;
     const others = options.filter((o) => o.id !== correctId);

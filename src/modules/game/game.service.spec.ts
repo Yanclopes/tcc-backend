@@ -48,6 +48,27 @@ describe('GameService', () => {
     getWrongOptionIds: jest.Mock;
     findOne: jest.Mock;
   };
+  let answerRepo: { createQueryBuilder: jest.Mock };
+
+  /**
+   * QueryBuilder encadeavel de mentira. Guarda os caminhos passados em
+   * select/groupBy para os testes conferirem que a query usa propriedades que
+   * realmente existem na entidade (ver teste de regressao da plateia).
+   */
+  const mockQueryBuilder = () => {
+    const calls: { select: string[]; groupBy: string[] } = { select: [], groupBy: [] };
+    const qb: Record<string, jest.Mock> & { calls: typeof calls; rawRows: unknown[] } = {
+      calls,
+      rawRows: [],
+    } as never;
+    qb.select = jest.fn((path: string) => (calls.select.push(path), qb));
+    qb.addSelect = jest.fn((path: string) => (calls.select.push(path), qb));
+    qb.where = jest.fn(() => qb);
+    qb.andWhere = jest.fn(() => qb);
+    qb.groupBy = jest.fn((path: string) => (calls.groupBy.push(path), qb));
+    qb.getRawMany = jest.fn(() => Promise.resolve(qb.rawRows));
+    return qb;
+  };
 
   const mockRepo = () => ({
     create: jest.fn((v) => v),
@@ -55,6 +76,7 @@ describe('GameService', () => {
     update: jest.fn(() => Promise.resolve({ affected: 1 })),
     count: jest.fn(() => Promise.resolve(0)),
     findOne: jest.fn(() => Promise.resolve(null)),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder()),
   });
 
   beforeEach(async () => {
@@ -88,6 +110,7 @@ describe('GameService', () => {
     }).compile();
 
     service = module.get(GameService);
+    answerRepo = module.get(getRepositoryToken(GameAnswer));
   });
 
   describe('submitAnswer', () => {
@@ -168,6 +191,65 @@ describe('GameService', () => {
 
       expect(result.removedOptionIds).toEqual([11, 14]);
       expect(result.state.powerups.fifty).toBe(false);
+    });
+
+    /** Pergunta de 4 alternativas usada nos testes da plateia. */
+    const perguntaComQuatroOpcoes = {
+      id: 10,
+      answerOptionId: 1,
+      options: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
+    };
+
+    /** Prepara o QueryBuilder da plateia com as linhas agregadas informadas. */
+    function comRespostasReais(rows: Array<{ optionId: number; count: string }>) {
+      const qb = mockQueryBuilder();
+      qb.rawRows = rows;
+      answerRepo.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    }
+
+    it('audience consulta a distribuicao real pelo caminho de relacao a.option', async () => {
+      // Regressao: 'a.optionId' nao existe na entidade GameAnswer e o TypeORM
+      // repassa o texto cru ao SQL, quebrando o power-up com
+      // "column a.optionid does not exist".
+      const qb = comRespostasReais([{ optionId: 1, count: '30' }]);
+      session.getOrFail.mockResolvedValue(baseState());
+      questions.findOne.mockResolvedValue(perguntaComQuatroOpcoes);
+
+      await service.usePowerup('game-1', 'audience');
+
+      expect(qb.calls.select).toContain('a.option');
+      expect(qb.calls.groupBy).toContain('a.option');
+      expect([...qb.calls.select, ...qb.calls.groupBy]).not.toContain('a.optionId');
+    });
+
+    it('audience usa a distribuicao real quando ha amostra suficiente', async () => {
+      comRespostasReais([
+        { optionId: 1, count: '25' },
+        { optionId: 2, count: '15' },
+      ]);
+      session.getOrFail.mockResolvedValue(baseState());
+      questions.findOne.mockResolvedValue(perguntaComQuatroOpcoes);
+
+      const result = await service.usePowerup('game-1', 'audience');
+
+      // 40 respostas: 25 -> 63%, 15 -> 38%; opcoes sem voto ficam em 0%.
+      expect(result.audienceDistribution).toEqual({ 1: 63, 2: 38, 3: 0, 4: 0 });
+      expect(result.state.powerups.audience).toBe(false);
+    });
+
+    it('audience cai no fallback simulado quando a amostra e pequena', async () => {
+      comRespostasReais([{ optionId: 1, count: '5' }]);
+      session.getOrFail.mockResolvedValue(baseState());
+      questions.findOne.mockResolvedValue(perguntaComQuatroOpcoes);
+
+      const result = await service.usePowerup('game-1', 'audience');
+      const dist = result.audienceDistribution as Record<number, number>;
+
+      expect(Object.keys(dist).sort()).toEqual(['1', '2', '3', '4']);
+      expect(Object.values(dist).reduce((a, b) => a + b, 0)).toBe(100);
+      expect(dist[1]).toBeGreaterThanOrEqual(55); // vies para a resposta correta
+      expect(dist[1]).toBeLessThanOrEqual(74);
     });
 
     it('rejeita power-up indisponivel', async () => {
