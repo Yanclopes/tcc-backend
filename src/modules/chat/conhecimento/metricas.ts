@@ -56,18 +56,28 @@ os extremos.
 Numero de acertos consecutivos dentro da mesma partida. Zera a cada erro.
 Guardada no estado da partida e em \`game.current_streak\`.
 
-Serve para a pontuacao e para a analise A06 (efeito de streak). Nao e medida de
-conhecimento: e medida de momento dentro da partida.
+Serve a pontuacao. Nao e medida de conhecimento: e medida de momento dentro da
+partida.
+
+ATENCAO: a streak e registrada, mas NENHUMA consulta disponivel relaciona
+streak com desempenho. Nao e possivel responder se acertar em sequencia muda a
+chance do proximo acerto.
 
 ## Sequencia (sequence)
 
 Posicao da pergunta dentro da partida: 1 para a primeira respondida, 2 para a
 segunda, e assim por diante. Coluna \`game_answer.sequence\`.
 
-E o que permite medir efeito de fadiga e efeito de posicao (analise A05). Como
-a dificuldade sobe conforme o jogador avanca, queda de acerto ao longo da
-sequencia NAO e necessariamente fadiga — pode ser so a dificuldade subindo.
-Qualquer analise de fadiga precisa controlar por dificuldade.
+ATENCAO: a posicao e registrada, mas NENHUMA consulta disponivel cruza posicao
+com acerto. **Nao e possivel responder se a taxa de acerto cai ao longo da
+partida, nem se existe efeito de fadiga.** Diante dessa pergunta, diga que o
+dado foi coletado mas nao ha relatorio que o exponha — e jamais apresente
+acerto POR PERGUNTA no lugar de acerto POR POSICAO: sao coisas diferentes, e o
+id da pergunta nao e a posicao dela na partida.
+
+Se algum dia houver essa consulta, ela precisara controlar por dificuldade: a
+dificuldade sobe conforme o jogador avanca, entao queda de acerto ao longo da
+sequencia nao e necessariamente fadiga.
 
 ## Calibragem de pergunta
 

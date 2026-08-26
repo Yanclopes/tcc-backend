@@ -83,12 +83,20 @@ export class DashboardService {
       .addSelect('ROUND(AVG((ga.is_correct)::int), 4)', 'taxa_acerto')
       .addSelect('ROUND(AVG(ga.response_time_ms))', 'tempo_medio_ms')
       .addSelect('COUNT(DISTINCT ga.game)', 'total_partidas')
+      // Partida finalizada = tem finished_at. A diferenca para total_partidas e
+      // o abandono — sinal operacional que o playbook manda observar e que, sem
+      // este campo, nenhuma consulta media.
+      .addSelect(
+        'COUNT(DISTINCT gm.id) FILTER (WHERE gm.finished_at IS NOT NULL)',
+        'partidas_finalizadas',
+      )
       .addSelect('COUNT(DISTINCT u.id)', 'total_participantes')
       .getRawOne<Record<string, string>>();
 
     return {
       totalRespostas: num(row?.total_respostas),
       totalAcertos: num(row?.total_acertos),
+      partidasFinalizadas: num(row?.partidas_finalizadas),
       taxaAcerto: num(row?.taxa_acerto),
       tempoMedioMs: num(row?.tempo_medio_ms),
       totalPartidas: num(row?.total_partidas),

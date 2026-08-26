@@ -67,7 +67,11 @@ Usar \`fifty\` ou \`audience\` reduz a pontuacao da pergunta a metade. Usar
 \`skip\` nao pontua, porque a pergunta nao chega a ser respondida.
 
 A coluna \`game_answer.powerup_used\` registra qual ajuda foi usada naquela
-resposta, ou NULL. E o que separa acerto puro de acerto assistido.
+resposta, ou NULL — e o que separaria acerto puro de acerto assistido.
+
+ATENCAO: esse registro existe, mas NENHUMA consulta disponivel o agrega. Nao e
+possivel responder em quais perguntas se usa mais ajuda, nem isolar a taxa de
+acerto sem ajuda. O dado foi coletado; falta o relatorio.
 
 ## Dificuldade adaptativa
 
@@ -76,8 +80,9 @@ posicoes 1 a 3 usam dificuldade 1, 4 a 6 dificuldade 2, 7 a 9 dificuldade 3,
 10 a 12 dificuldade 4, e a partir da 13 dificuldade 5.
 
 Consequencia: \`sequence\` e \`difficulty\` sao correlacionados por construcao.
-Qualquer analise que cruze posicao na partida com desempenho precisa controlar
-por dificuldade, senao atribui a fadiga o que e so a prova ficando mais dificil.
+Qualquer analise que cruze posicao na partida com desempenho precisaria
+controlar por dificuldade, senao atribui a fadiga o que e so a prova ficando
+mais dificil. Hoje essa analise nao existe — ver os pontos cegos.
 
 ## Coleta bruta
 

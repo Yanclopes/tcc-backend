@@ -89,7 +89,9 @@ export class FerramentasService {
       ferramentaComFiltros(
         'visao_geral',
         'KPIs gerais do levantamento: total de respostas, taxa de acerto, participantes, ' +
-          'tempo medio. Use quando a pergunta for ampla ou pedir um panorama.',
+          'tempo medio, total de partidas e quantas foram FINALIZADAS. A diferenca entre as ' +
+          'duas ultimas e o abandono. Use quando a pergunta for ampla, pedir panorama ou ' +
+          'falar de conclusao/abandono de partidas.',
       ),
       ferramentaComFiltros(
         'desempenho_por_ods',

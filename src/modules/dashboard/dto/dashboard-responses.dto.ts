@@ -17,6 +17,14 @@ export class DashboardOverviewDto {
   @ApiProperty({ example: 480, description: 'Total de partidas' })
   totalPartidas: number;
 
+  @ApiProperty({
+    example: 24,
+    description:
+      'Partidas com finished_at preenchido. A diferenca para totalPartidas e o abandono. ' +
+      'Cuidado: em Sobrevivencia e Infinito o encerramento e regra do jogo, nao abandono.',
+  })
+  partidasFinalizadas: number;
+
   @ApiProperty({ example: 210, description: 'Participantes autenticados distintos' })
   totalParticipantes: number;
 }

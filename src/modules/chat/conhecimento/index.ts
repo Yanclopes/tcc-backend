@@ -1,6 +1,7 @@
 import { DocumentoDeConhecimento } from '../chat.types';
 import { dicionarioDeDados } from './dicionario-de-dados';
 import { metricas } from './metricas';
+import { pontosCegos } from './pontos-cegos';
 import { playbookOperacional } from './playbook-operacional';
 import { quandoNaoAgir } from './quando-nao-agir';
 import { regrasDoJogo } from './regras-do-jogo';
@@ -19,4 +20,5 @@ export const BASE_CURADA: DocumentoDeConhecimento[] = [
   dicionarioDeDados,
   playbookOperacional,
   quandoNaoAgir,
+  pontosCegos,
 ];
