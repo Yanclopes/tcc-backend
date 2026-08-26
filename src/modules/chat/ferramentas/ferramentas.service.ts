@@ -94,13 +94,15 @@ export class FerramentasService {
       ferramentaComFiltros(
         'desempenho_por_ods',
         'Taxa de acerto por ODS, calculada no momento da consulta. Traz tambem o total ' +
-          'de respostas (N) e quantas perguntas distintas sustentam cada taxa. Use para ' +
-          'comparar objetivos entre si ou achar o ODS com melhor/pior desempenho.',
+          'de respostas (N) e quantas perguntas distintas sustentam cada taxa. SEM FILTRO ' +
+          'devolve TODOS os ODS — use assim para comparar objetivos ou achar o melhor/pior. ' +
+          'So informe goalNumber se o usuario perguntou de um ODS especifico.',
       ),
       ferramentaComFiltros(
         'desempenho_por_regiao',
         'Taxa de acerto por estado, cidade ou escola. Informe "level" para escolher a ' +
-          'granularidade do recorte.',
+          'granularidade. SEM FILTRO devolve TODAS as regioes daquele nivel — e assim que ' +
+          'se descobre onde a participacao nao chegou.',
         {
           level: {
             type: 'string',
@@ -111,8 +113,17 @@ export class FerramentasService {
       ),
       ferramentaComFiltros(
         'desempenho_por_pergunta',
-        'Taxa de acerto e tempo medio por pergunta. Use para achar perguntas dificeis, ' +
-          'faceis demais ou lentas.',
+        'Taxa de acerto e tempo medio por pergunta. SEM FILTRO devolve TODAS as perguntas ' +
+          'do catalogo — e assim que se descobre quais revisar, desativar ou quais estao ' +
+          'lentas. Nao filtre por ODS a menos que o usuario tenha delimitado.',
+      ),
+      ferramenta(
+        'cobertura_por_escola',
+        'Lista TODAS as escolas do catalogo com quantos usuarios se cadastraram, quantas ' +
+          'partidas e quantas respostas cada uma teve — INCLUSIVE as que tem zero. Use ' +
+          'sempre que a pergunta for sobre onde a participacao nao chegou, onde divulgar ' +
+          'ou quais escolas estao paradas. NAO use desempenho_por_regiao para isso: aquela ' +
+          'consulta parte das respostas e omite justamente as escolas sem participacao.',
       ),
       ferramenta(
         'acerto_por_ods_consolidado',
@@ -127,8 +138,9 @@ export class FerramentasService {
       ),
       ferramenta(
         'calibragem_perguntas',
-        'Perguntas classificadas por qualidade de calibragem. Use para responder quais ' +
-          'perguntas estao faceis demais, dificeis demais ou com amostra insuficiente.',
+        'Perguntas classificadas por qualidade de calibragem. SEM o parametro flag devolve ' +
+          'TODAS as perguntas classificadas de uma vez — prefira assim para triar o catalogo, ' +
+          'em vez de consultar uma flag por vez.',
         {
           flag: {
             type: 'string',
@@ -155,6 +167,8 @@ export class FerramentasService {
       }
       case 'desempenho_por_pergunta':
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
+      case 'cobertura_por_escola':
+        return this.sanitizar(await this.dashboard.coberturaPorEscola());
       case 'acerto_por_ods_consolidado':
         return this.sanitizar(await this.analytics.acertoPorOds());
       case 'desempenho_por_escolaridade':

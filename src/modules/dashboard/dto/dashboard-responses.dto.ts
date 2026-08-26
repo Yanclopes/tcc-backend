@@ -91,3 +91,28 @@ export class QuestionBreakdownRowDto {
   @ApiProperty({ example: 4800 })
   tempoMedioMs: number;
 }
+
+/**
+ * Cobertura por escola. Diferente das demais linhas do dashboard, esta parte do
+ * catalogo de escolas e nao das respostas — por isso escola com zero
+ * participacao aparece, que e justamente o caso que interessa a quem vai agir.
+ */
+export class SchoolCoverageRowDto {
+  @ApiProperty({ example: 1 })
+  schoolId: number;
+
+  @ApiProperty({ example: 'UNIDAVI' })
+  schoolName: string;
+
+  @ApiProperty({ example: 'Rio do Sul' })
+  cityName: string;
+
+  @ApiProperty({ example: 12, description: 'Usuarios cadastrados com esta escola no perfil.' })
+  totalCadastrados: number;
+
+  @ApiProperty({ example: 30 })
+  totalPartidas: number;
+
+  @ApiProperty({ example: 0, description: 'Zero significa que a participacao nao chegou.' })
+  totalRespostas: number;
+}

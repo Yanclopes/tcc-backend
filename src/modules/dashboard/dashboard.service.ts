@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SelectQueryBuilder, Repository } from 'typeorm';
+import { AppUser } from '../users/entities/app-user.entity';
+import { City } from '../geo/entities/city.entity';
+import { School } from '../geo/entities/school.entity';
+import { Game } from '../game/entities/game.entity';
 import { GameAnswer } from '../game/entities/game-answer.entity';
 import { DashboardFilterDto } from './dto/dashboard-filter.dto';
 import {
   DashboardOverviewDto,
   OdsBreakdownRowDto,
   QuestionBreakdownRowDto,
+  SchoolCoverageRowDto,
   RegionBreakdownRowDto,
 } from './dto/dashboard-responses.dto';
 import { RegionLevel } from './dto/region-level.enum';
@@ -174,6 +179,51 @@ export class DashboardService {
       totalRespostas: num(r.total_respostas),
       taxaAcerto: num(r.taxa_acerto),
       tempoMedioMs: num(r.tempo_medio_ms),
+    }));
+  }
+
+  /**
+   * Cobertura por escola — TODAS as escolas do catalogo, inclusive as que nunca
+   * tiveram uma partida.
+   *
+   * Por que nao da para usar byRegion para isto: aquela consulta parte de
+   * `game_answer`, entao escola sem nenhuma resposta simplesmente nao aparece.
+   * Perguntar "onde a participacao ainda nao chegou" com ela devolve o oposto
+   * do que se pediu — as escolas que JA participaram. Aqui a varredura parte de
+   * `school`, com LEFT JOIN, e o zero e uma linha legitima.
+   *
+   * A cobertura desigual entre municipios e a limitacao mais concreta do
+   * levantamento, e a unica que se resolve com acao operacional.
+   */
+  async coberturaPorEscola(): Promise<SchoolCoverageRowDto[]> {
+    const rows = await this.answerRepo.manager
+      .createQueryBuilder()
+      .select('sc.id', 'school_id')
+      .addSelect('sc.name', 'school_name')
+      .addSelect('ci.name', 'city_name')
+      .addSelect('COUNT(DISTINCT u.id)', 'total_cadastrados')
+      .addSelect('COUNT(DISTINCT gm.id)', 'total_partidas')
+      .addSelect('COUNT(ga.id)', 'total_respostas')
+      .from(School, 'sc')
+      .leftJoin(City, 'ci', 'ci.id = sc.city')
+      .leftJoin(AppUser, 'u', 'u.school = sc.id')
+      .leftJoin(Game, 'gm', 'gm.user = u.id')
+      .leftJoin(GameAnswer, 'ga', 'ga.game = gm.id')
+      .groupBy('sc.id')
+      .addGroupBy('sc.name')
+      .addGroupBy('ci.name')
+      // Sem participacao primeiro: e o que interessa a quem vai agir.
+      .orderBy('total_respostas', 'ASC')
+      .addOrderBy('sc.name', 'ASC')
+      .getRawMany<Record<string, string>>();
+
+    return rows.map((r) => ({
+      schoolId: num(r.school_id),
+      schoolName: r.school_name,
+      cityName: r.city_name,
+      totalCadastrados: num(r.total_cadastrados),
+      totalPartidas: num(r.total_partidas),
+      totalRespostas: num(r.total_respostas),
     }));
   }
 }

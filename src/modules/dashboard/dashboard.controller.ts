@@ -11,6 +11,7 @@ import {
   OdsBreakdownRowDto,
   QuestionBreakdownRowDto,
   RegionBreakdownRowDto,
+  SchoolCoverageRowDto,
 } from './dto/dashboard-responses.dto';
 import { RegionLevel } from './dto/region-level.enum';
 
@@ -44,6 +45,14 @@ export class DashboardController {
   })
   byRegion(@Query() filter: DashboardFilterDto): Promise<RegionBreakdownRowDto[]> {
     return this.dashboardService.byRegion(filter, filter.level ?? RegionLevel.STATE);
+  }
+
+  @Get('school-coverage')
+  @ApiOperation({
+    summary: 'Cobertura por escola, incluindo as que nunca tiveram partida (admin)',
+  })
+  schoolCoverage(): Promise<SchoolCoverageRowDto[]> {
+    return this.dashboardService.coberturaPorEscola();
   }
 
   @Get('by-question')

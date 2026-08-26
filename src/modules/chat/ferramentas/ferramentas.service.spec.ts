@@ -11,6 +11,7 @@ describe('FerramentasService', () => {
     byOds: jest.Mock;
     byRegion: jest.Mock;
     byQuestion: jest.Mock;
+    coberturaPorEscola: jest.Mock;
   };
   let analytics: {
     acertoPorOds: jest.Mock;
@@ -24,6 +25,7 @@ describe('FerramentasService', () => {
       byOds: jest.fn(() => Promise.resolve([{ goalNumber: 6, taxa: 42 }])),
       byRegion: jest.fn(() => Promise.resolve([])),
       byQuestion: jest.fn(() => Promise.resolve([])),
+      coberturaPorEscola: jest.fn(() => Promise.resolve([])),
     };
     analytics = {
       acertoPorOds: jest.fn(() => Promise.resolve([])),
@@ -46,7 +48,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(7);
+      expect(nomes).toHaveLength(8);
     });
 
     it('toda ferramenta declarada tem descricao', () => {
@@ -104,6 +106,15 @@ describe('FerramentasService', () => {
       await service.executar('desempenho_por_regiao', { level: 'planeta' });
 
       expect(dashboard.byRegion).toHaveBeenCalledWith(expect.anything(), RegionLevel.STATE);
+    });
+
+    it('usa cobertura_por_escola, e nao o recorte por regiao, para participacao zero', async () => {
+      // desempenho_por_regiao parte de game_answer e omite escola sem resposta —
+      // usa-la para "onde a participacao nao chegou" devolve o oposto do pedido.
+      await service.executar('cobertura_por_escola', {});
+
+      expect(dashboard.coberturaPorEscola).toHaveBeenCalled();
+      expect(dashboard.byRegion).not.toHaveBeenCalled();
     });
 
     it('rejeita ferramenta desconhecida', async () => {

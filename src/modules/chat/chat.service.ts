@@ -9,6 +9,7 @@ import { AppUser } from '../users/entities/app-user.entity';
 import { PassoDoAssistente, RespostaDoAssistente, TrechoRecuperado } from './chat.types';
 import { ChatConversa } from './entities/chat-conversa.entity';
 import { ChatMensagem, PAPEL_ASSISTENTE, PAPEL_USUARIO } from './entities/chat-mensagem.entity';
+import { mensagensDeContexto } from './rag/contexto';
 import { FerramentasService } from './ferramentas/ferramentas.service';
 import { OpenAiService } from './rag/openai.service';
 import { RetrieverService } from './rag/retriever.service';
@@ -38,7 +39,14 @@ Como trabalhar:
    contagem de perguntas por ODS, diga que nao tem — nao chute um valor
    plausivel. Numero inventado ao lado de numero correto e o pior erro
    possivel, porque nao ha como distinguir os dois.
-4. Se a pergunta estiver fora do escopo da plataforma, diga isso. Nao improvise
+4. VARREDURA ANTES DE FILTRAR. Se a pergunta for do tipo "quais", "onde",
+   "algum", "liste" ou "o que eu deveria", ela pede o conjunto INTEIRO: chame a
+   ferramenta SEM filtro e trie o resultado voce mesmo. So use filtro quando o
+   proprio usuario delimitou o recorte (um ODS, uma cidade, uma escola).
+   Jamais restrinja a consulta aos itens que apareceram no contexto — o que a
+   busca trouxe nao e o que existe, e responder sobre um subconjunto como se
+   fosse o todo e tao errado quanto inventar numero.
+5. Se a pergunta estiver fora do escopo da plataforma, diga isso. Nao improvise
    com conhecimento geral.
 
 Como responder:
@@ -192,13 +200,14 @@ export class ChatService {
       })),
     });
 
-    const contexto = trechos.length
-      ? trechos.map((t) => t.texto).join('\n\n---\n\n')
-      : '(a busca na base de conhecimento nao encontrou nada relevante para esta pergunta)';
-
     const mensagens: ChatCompletionMessageParam[] = [
       { role: 'system', content: INSTRUCAO_DO_SISTEMA },
-      { role: 'system', content: `CONTEXTO recuperado da base de conhecimento:\n\n${contexto}` },
+      // Dois blocos com papeis distintos, e nao um "contexto" unico: ver a
+      // explicacao em rag/contexto.ts.
+      ...mensagensDeContexto(trechos).map((content): ChatCompletionMessageParam => ({
+        role: 'system',
+        content,
+      })),
       ...historico.map((m): ChatCompletionMessageParam => ({
         role: m.papel === PAPEL_USUARIO ? 'user' : 'assistant',
         content: m.conteudo,

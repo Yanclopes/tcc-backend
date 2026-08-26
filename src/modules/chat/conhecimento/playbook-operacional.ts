@@ -77,6 +77,12 @@ sustentam cada um antes de tratar a diferenca como real.
 
 ## Sinal: escola ou cidade com participacao muito baixa ou zero
 
+Para responder "onde a participacao ainda nao chegou" e preciso partir do
+CATALOGO de escolas, nao das respostas. Uma consulta que parte de
+\`game_answer\` so enxerga quem ja participou — a escola com zero partidas
+simplesmente nao aparece, e a resposta acaba listando o oposto do que se pediu.
+
+
 E onde a divulgacao nao chegou. A cobertura desigual entre municipios do Alto
 Vale e a limitacao mais concreta do levantamento, e a unica que se resolve com
 acao operacional em vez de mudanca de sistema.
