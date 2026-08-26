@@ -11,7 +11,8 @@ describe('FerramentasService', () => {
     byOds: jest.Mock;
     byRegion: jest.Mock;
     byQuestion: jest.Mock;
-    coberturaPorEscola: jest.Mock;
+    coberturaPorOds: jest.Mock;
+    coberturaGeografica: jest.Mock;
   };
   let analytics: {
     acertoPorOds: jest.Mock;
@@ -25,7 +26,8 @@ describe('FerramentasService', () => {
       byOds: jest.fn(() => Promise.resolve([{ goalNumber: 6, taxa: 42 }])),
       byRegion: jest.fn(() => Promise.resolve([])),
       byQuestion: jest.fn(() => Promise.resolve([])),
-      coberturaPorEscola: jest.fn(() => Promise.resolve([])),
+      coberturaPorOds: jest.fn(() => Promise.resolve([])),
+      coberturaGeografica: jest.fn(() => Promise.resolve([])),
     };
     analytics = {
       acertoPorOds: jest.fn(() => Promise.resolve([])),
@@ -48,7 +50,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(8);
+      expect(nomes).toHaveLength(9);
     });
 
     it('toda ferramenta declarada tem descricao', () => {
@@ -108,13 +110,28 @@ describe('FerramentasService', () => {
       expect(dashboard.byRegion).toHaveBeenCalledWith(expect.anything(), RegionLevel.STATE);
     });
 
-    it('usa cobertura_por_escola, e nao o recorte por regiao, para participacao zero', async () => {
-      // desempenho_por_regiao parte de game_answer e omite escola sem resposta —
+    it('cobertura geografica nao passa pelo recorte que omite quem nao participou', async () => {
+      // desempenho_por_regiao parte de game_answer e omite quem tem zero —
       // usa-la para "onde a participacao nao chegou" devolve o oposto do pedido.
-      await service.executar('cobertura_por_escola', {});
+      await service.executar('cobertura_geografica', {});
 
-      expect(dashboard.coberturaPorEscola).toHaveBeenCalled();
+      expect(dashboard.coberturaGeografica).toHaveBeenCalledWith(RegionLevel.SCHOOL);
       expect(dashboard.byRegion).not.toHaveBeenCalled();
+    });
+
+    it('cobertura geografica aceita o nivel cidade', async () => {
+      await service.executar('cobertura_geografica', { level: 'city' });
+
+      expect(dashboard.coberturaGeografica).toHaveBeenCalledWith(RegionLevel.CITY);
+    });
+
+    it('cobertura do catalogo nao passa por desempenho_por_ods', async () => {
+      // desempenho_por_ods omite ODS sem nenhuma resposta — foi o que fez o
+      // assistente negar que existisse ODS sem pergunta cadastrada.
+      await service.executar('cobertura_do_catalogo', {});
+
+      expect(dashboard.coberturaPorOds).toHaveBeenCalled();
+      expect(dashboard.byOds).not.toHaveBeenCalled();
     });
 
     it('rejeita ferramenta desconhecida', async () => {

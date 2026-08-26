@@ -62,6 +62,28 @@ bastante para ser julgada. Nao revise, nao desative — deixe rodar.
 Se muitas perguntas estao nesse estado, o gargalo e participacao, nao conteudo.
 Ver a secao sobre cobertura.
 
+## Cadastrada, ativa, respondida: tres coisas diferentes
+
+Confundir as tres e a origem de resposta errada. Uma pergunta pode estar
+cadastrada e inativa; pode estar ativa e ainda sem nenhuma resposta.
+
+Contagem de "perguntas que sustentam uma taxa" conta apenas as que RECEBERAM
+resposta. Ela nao serve para dizer quantas perguntas existem para um ODS, e
+muito menos para afirmar que um ODS tem perguntas cadastradas.
+
+Para saber o que EXISTE no catalogo — e portanto onde falta conteudo — e
+preciso partir do catalogo, nao das respostas. O mesmo vale para escolas e
+cidades: consulta que parte das respostas nunca enxerga quem tem zero.
+
+## Sinal: ODS sem nenhuma pergunta cadastrada
+
+Lacuna de conteudo, nao de participacao. O ODS existe na plataforma mas nunca
+pode ser sorteado, porque nao ha o que perguntar. Nenhum jogador chega perto
+dele, e ele fica invisivel em qualquer relatorio baseado em respostas.
+
+Acao: cadastrar perguntas para esse ODS em /admin/perguntas. E a lacuna mais
+barata de corrigir e a que mais amplia o alcance do levantamento.
+
 ## Sinal: ODS com poucas perguntas cadastradas
 
 A taxa de acerto de um ODS sustentado por uma unica pergunta mede aquela
@@ -74,6 +96,22 @@ ajuste de pergunta existente.
 
 Ao comparar ODS entre si, sempre verifique quantas perguntas distintas
 sustentam cada um antes de tratar a diferenca como real.
+
+## Dois sinais diferentes: ninguem cadastrado x cadastrado sem jogar
+
+Confundir os dois leva a acao errada, e a resposta a perguntas diferentes:
+
+- **Zero alunos cadastrados** — a divulgacao nao chegou. Ninguem daquela escola
+  ou cidade sequer criou conta. Acao: contato e divulgacao.
+- **Alunos cadastrados, mas zero partidas** — a divulgacao chegou e a adesao
+  nao. Criaram conta e nao jogaram. Acao: reengajamento de quem ja esta la, que
+  e um problema diferente e geralmente mais barato de resolver.
+
+Ao responder uma pergunta que combina condicoes ("cadastrados MAS sem
+partida"), as duas precisam valer ao mesmo tempo. Quem tem zero cadastrados NAO
+satisfaz "tem alunos cadastrados" e nao entra nessa lista. Se nenhum caso
+satisfizer as duas condicoes, a resposta correta e "nenhum" — nao uma lista
+aproximada.
 
 ## Sinal: escola ou cidade com participacao muito baixa ou zero
 

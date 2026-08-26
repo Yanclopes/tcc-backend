@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** KPIs consolidados do levantamento (respeitando os filtros aplicados). */
 export class DashboardOverviewDto {
@@ -93,26 +93,59 @@ export class QuestionBreakdownRowDto {
 }
 
 /**
- * Cobertura por escola. Diferente das demais linhas do dashboard, esta parte do
- * catalogo de escolas e nao das respostas — por isso escola com zero
- * participacao aparece, que e justamente o caso que interessa a quem vai agir.
+ * Cobertura do catalogo por ODS. Parte de `goal`, entao ODS sem nenhuma
+ * pergunta cadastrada aparece com zeros — que e justamente a lacuna a agir.
  */
-export class SchoolCoverageRowDto {
-  @ApiProperty({ example: 1 })
-  schoolId: number;
+export class OdsCoverageRowDto {
+  @ApiProperty({ example: 6 })
+  goalNumber: number;
 
-  @ApiProperty({ example: 'UNIDAVI' })
-  schoolName: string;
+  @ApiProperty({ example: 'Agua Potavel e Saneamento' })
+  goalName: string;
+
+  @ApiProperty({ example: 3, description: 'Perguntas existentes no banco para este ODS.' })
+  perguntasCadastradas: number;
+
+  @ApiProperty({ example: 2, description: 'Dessas, quantas estao ativas (sendo servidas).' })
+  perguntasAtivas: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Dessas, quantas ja receberam ao menos uma resposta. Diferente de cadastradas.',
+  })
+  perguntasComResposta: number;
+
+  @ApiProperty({ example: 10 })
+  totalRespostas: number;
+}
+
+/**
+ * Cobertura geografica (cidade ou escola). Parte do catalogo e nao das
+ * respostas, entao participacao zero aparece como linha.
+ *
+ * Os nomes dos campos sao explicitos de proposito: este payload vai para o
+ * modelo de linguagem como retorno de ferramenta, e chave generica ('nome',
+ * 'contexto') levou o modelo a rotular cidade com nome de estado.
+ */
+export class CoverageRowDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiPropertyOptional({ example: 'UNIDAVI', description: 'Apenas no nivel escola.' })
+  escola?: string;
 
   @ApiProperty({ example: 'Rio do Sul' })
-  cityName: string;
+  cidade: string;
 
-  @ApiProperty({ example: 12, description: 'Usuarios cadastrados com esta escola no perfil.' })
-  totalCadastrados: number;
+  @ApiPropertyOptional({ example: 'Santa Catarina', description: 'Apenas no nivel cidade.' })
+  estado?: string;
+
+  @ApiProperty({ example: 12, description: 'Usuarios com este vinculo no perfil.' })
+  alunosCadastrados: number;
 
   @ApiProperty({ example: 30 })
-  totalPartidas: number;
+  partidas: number;
 
   @ApiProperty({ example: 0, description: 'Zero significa que a participacao nao chegou.' })
-  totalRespostas: number;
+  respostas: number;
 }

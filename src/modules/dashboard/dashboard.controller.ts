@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AppRole } from '../auth/role.enum';
 import { Roles } from '../auth/roles.decorator';
@@ -11,7 +11,8 @@ import {
   OdsBreakdownRowDto,
   QuestionBreakdownRowDto,
   RegionBreakdownRowDto,
-  SchoolCoverageRowDto,
+  CoverageRowDto,
+  OdsCoverageRowDto,
 } from './dto/dashboard-responses.dto';
 import { RegionLevel } from './dto/region-level.enum';
 
@@ -47,12 +48,23 @@ export class DashboardController {
     return this.dashboardService.byRegion(filter, filter.level ?? RegionLevel.STATE);
   }
 
-  @Get('school-coverage')
+  @Get('ods-coverage')
   @ApiOperation({
-    summary: 'Cobertura por escola, incluindo as que nunca tiveram partida (admin)',
+    summary: 'Cobertura do catalogo por ODS, incluindo os sem pergunta cadastrada (admin)',
   })
-  schoolCoverage(): Promise<SchoolCoverageRowDto[]> {
-    return this.dashboardService.coberturaPorEscola();
+  odsCoverage(): Promise<OdsCoverageRowDto[]> {
+    return this.dashboardService.coberturaPorOds();
+  }
+
+  @Get('geo-coverage')
+  @ApiOperation({
+    summary: 'Cobertura por cidade ou escola, incluindo as sem nenhuma partida (admin)',
+  })
+  @ApiQuery({ name: 'level', required: false, enum: [RegionLevel.CITY, RegionLevel.SCHOOL] })
+  geoCoverage(@Query('level') level?: string): Promise<CoverageRowDto[]> {
+    return this.dashboardService.coberturaGeografica(
+      level === RegionLevel.CITY ? RegionLevel.CITY : RegionLevel.SCHOOL,
+    );
   }
 
   @Get('by-question')

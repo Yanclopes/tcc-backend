@@ -94,7 +94,8 @@ export class FerramentasService {
       ferramentaComFiltros(
         'desempenho_por_ods',
         'Taxa de acerto por ODS, calculada no momento da consulta. Traz tambem o total ' +
-          'de respostas (N) e quantas perguntas distintas sustentam cada taxa. SEM FILTRO ' +
+          'de respostas (N) e quantas perguntas distintas RECEBERAM RESPOSTA (nao e o numero de ' +
+          'perguntas cadastradas — para isso use cobertura_do_catalogo). SEM FILTRO ' +
           'devolve TODOS os ODS — use assim para comparar objetivos ou achar o melhor/pior. ' +
           'So informe goalNumber se o usuario perguntou de um ODS especifico.',
       ),
@@ -118,12 +119,27 @@ export class FerramentasService {
           'lentas. Nao filtre por ODS a menos que o usuario tenha delimitado.',
       ),
       ferramenta(
-        'cobertura_por_escola',
-        'Lista TODAS as escolas do catalogo com quantos usuarios se cadastraram, quantas ' +
-          'partidas e quantas respostas cada uma teve — INCLUSIVE as que tem zero. Use ' +
-          'sempre que a pergunta for sobre onde a participacao nao chegou, onde divulgar ' +
-          'ou quais escolas estao paradas. NAO use desempenho_por_regiao para isso: aquela ' +
-          'consulta parte das respostas e omite justamente as escolas sem participacao.',
+        'cobertura_do_catalogo',
+        'Os 17 ODS com quantas perguntas cada um tem CADASTRADAS, quantas ativas, quantas ' +
+          'ja receberam resposta e o total de respostas — INCLUSIVE os ODS que nao tem ' +
+          'nenhuma pergunta. Use para "algum ODS esta sem pergunta", "onde falta conteudo" ' +
+          'ou "qual ODS precisa de mais perguntas". NAO use desempenho_por_ods para isso: ' +
+          'aquela consulta parte das respostas e omite os ODS sem nenhuma resposta.',
+      ),
+      ferramenta(
+        'cobertura_geografica',
+        'TODAS as cidades ou escolas do catalogo com quantos usuarios se cadastraram, ' +
+          'quantas partidas e quantas respostas — INCLUSIVE as que tem zero. Use sempre ' +
+          'que a pergunta for sobre onde a participacao nao chegou, onde divulgar ou quem ' +
+          'esta parado. NAO use desempenho_por_regiao para isso: aquela consulta parte das ' +
+          'respostas e omite justamente quem nao participou.',
+        {
+          level: {
+            type: 'string',
+            enum: [RegionLevel.CITY, RegionLevel.SCHOOL],
+            description: 'city ou school. Padrao: school.',
+          },
+        },
       ),
       ferramenta(
         'acerto_por_ods_consolidado',
@@ -167,8 +183,14 @@ export class FerramentasService {
       }
       case 'desempenho_por_pergunta':
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
-      case 'cobertura_por_escola':
-        return this.sanitizar(await this.dashboard.coberturaPorEscola());
+      case 'cobertura_do_catalogo':
+        return this.sanitizar(await this.dashboard.coberturaPorOds());
+      case 'cobertura_geografica':
+        return this.sanitizar(
+          await this.dashboard.coberturaGeografica(
+            argumentos.level === RegionLevel.CITY ? RegionLevel.CITY : RegionLevel.SCHOOL,
+          ),
+        );
       case 'acerto_por_ods_consolidado':
         return this.sanitizar(await this.analytics.acertoPorOds());
       case 'desempenho_por_escolaridade':

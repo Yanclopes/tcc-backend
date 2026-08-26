@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SelectQueryBuilder, Repository } from 'typeorm';
 import { AppUser } from '../users/entities/app-user.entity';
+import { Goal } from '../goals/entities/goal.entity';
+import { Question } from '../questions/entities/question.entity';
+import { State } from '../geo/entities/state.entity';
 import { City } from '../geo/entities/city.entity';
 import { School } from '../geo/entities/school.entity';
 import { Game } from '../game/entities/game.entity';
@@ -11,7 +14,8 @@ import {
   DashboardOverviewDto,
   OdsBreakdownRowDto,
   QuestionBreakdownRowDto,
-  SchoolCoverageRowDto,
+  CoverageRowDto,
+  OdsCoverageRowDto,
   RegionBreakdownRowDto,
 } from './dto/dashboard-responses.dto';
 import { RegionLevel } from './dto/region-level.enum';
@@ -183,47 +187,101 @@ export class DashboardService {
   }
 
   /**
-   * Cobertura por escola — TODAS as escolas do catalogo, inclusive as que nunca
-   * tiveram uma partida.
+   * Cobertura do CATALOGO por ODS — os 17, inclusive os que nao tem nenhuma
+   * pergunta cadastrada.
    *
-   * Por que nao da para usar byRegion para isto: aquela consulta parte de
-   * `game_answer`, entao escola sem nenhuma resposta simplesmente nao aparece.
-   * Perguntar "onde a participacao ainda nao chegou" com ela devolve o oposto
-   * do que se pediu — as escolas que JA participaram. Aqui a varredura parte de
-   * `school`, com LEFT JOIN, e o zero e uma linha legitima.
+   * Distingue tres coisas que byOds nao distingue e que sao facilmente
+   * confundidas:
+   *   - perguntasCadastradas: existe no banco de perguntas
+   *   - perguntasAtivas: esta sendo servida em partida
+   *   - perguntasComResposta: alguem ja respondeu
    *
-   * A cobertura desigual entre municipios e a limitacao mais concreta do
-   * levantamento, e a unica que se resolve com acao operacional.
+   * byOds parte de `game_answer`, entao um ODS sem nenhuma resposta nao aparece
+   * ali — perguntar "algum ODS esta sem pergunta?" com aquela consulta devolve
+   * "nenhum", que e falso. Aqui a varredura parte de `goal`.
    */
-  async coberturaPorEscola(): Promise<SchoolCoverageRowDto[]> {
+  async coberturaPorOds(): Promise<OdsCoverageRowDto[]> {
     const rows = await this.answerRepo.manager
       .createQueryBuilder()
-      .select('sc.id', 'school_id')
-      .addSelect('sc.name', 'school_name')
-      .addSelect('ci.name', 'city_name')
-      .addSelect('COUNT(DISTINCT u.id)', 'total_cadastrados')
-      .addSelect('COUNT(DISTINCT gm.id)', 'total_partidas')
+      .select('g.number', 'goal_number')
+      .addSelect('g.name', 'goal_name')
+      .addSelect('COUNT(DISTINCT q.id)', 'perguntas_cadastradas')
+      .addSelect('COUNT(DISTINCT q.id) FILTER (WHERE q.is_active)', 'perguntas_ativas')
+      .addSelect('COUNT(DISTINCT ga.question)', 'perguntas_com_resposta')
       .addSelect('COUNT(ga.id)', 'total_respostas')
-      .from(School, 'sc')
-      .leftJoin(City, 'ci', 'ci.id = sc.city')
-      .leftJoin(AppUser, 'u', 'u.school = sc.id')
-      .leftJoin(Game, 'gm', 'gm.user = u.id')
-      .leftJoin(GameAnswer, 'ga', 'ga.game = gm.id')
-      .groupBy('sc.id')
-      .addGroupBy('sc.name')
-      .addGroupBy('ci.name')
-      // Sem participacao primeiro: e o que interessa a quem vai agir.
-      .orderBy('total_respostas', 'ASC')
-      .addOrderBy('sc.name', 'ASC')
+      .from(Goal, 'g')
+      .leftJoin(Question, 'q', 'q.goal = g.id')
+      .leftJoin(GameAnswer, 'ga', 'ga.question = q.id')
+      .groupBy('g.number')
+      .addGroupBy('g.name')
+      .orderBy('g.number', 'ASC')
       .getRawMany<Record<string, string>>();
 
     return rows.map((r) => ({
-      schoolId: num(r.school_id),
-      schoolName: r.school_name,
-      cityName: r.city_name,
-      totalCadastrados: num(r.total_cadastrados),
-      totalPartidas: num(r.total_partidas),
+      goalNumber: num(r.goal_number),
+      goalName: r.goal_name,
+      perguntasCadastradas: num(r.perguntas_cadastradas),
+      perguntasAtivas: num(r.perguntas_ativas),
+      perguntasComResposta: num(r.perguntas_com_resposta),
       totalRespostas: num(r.total_respostas),
+    }));
+  }
+
+  /**
+   * Cobertura geografica — TODAS as cidades ou escolas do catalogo, inclusive
+   * as que nunca tiveram uma partida.
+   *
+   * Mesmo motivo da cobertura por ODS: `byRegion` parte de `game_answer` e so
+   * enxerga quem ja participou, entao respondia "onde a participacao nao
+   * chegou" listando exatamente quem ja participou.
+   */
+  async coberturaGeografica(level: RegionLevel): Promise<CoverageRowDto[]> {
+    const qb = this.answerRepo.manager.createQueryBuilder();
+
+    if (level === RegionLevel.SCHOOL) {
+      qb.select('sc.id', 'id')
+        .addSelect('sc.name', 'escola')
+        .addSelect('ci.name', 'cidade')
+        .from(School, 'sc')
+        .leftJoin(City, 'ci', 'ci.id = sc.city')
+        .leftJoin(AppUser, 'u', 'u.school = sc.id');
+    } else {
+      // Cidade: so as que tem escola cadastrada. As 5571 cidades do IBGE sem
+      // escola nao sao lacuna de cobertura, sao apenas o catalogo geografico.
+      qb.select('ci.id', 'id')
+        .addSelect('ci.name', 'cidade')
+        .addSelect('st.name', 'estado')
+        .from(City, 'ci')
+        .innerJoin(School, 'sc', 'sc.city = ci.id')
+        .leftJoin(State, 'st', 'st.id = ci.state')
+        .leftJoin(AppUser, 'u', 'u.city = ci.id');
+    }
+
+    const rows = await qb
+      .addSelect('COUNT(DISTINCT u.id)', 'alunos_cadastrados')
+      .addSelect('COUNT(DISTINCT gm.id)', 'partidas')
+      .addSelect('COUNT(ga.id)', 'respostas')
+      .leftJoin(Game, 'gm', 'gm.user = u.id')
+      .leftJoin(GameAnswer, 'ga', 'ga.game = gm.id')
+      .groupBy('1')
+      .addGroupBy('2')
+      .addGroupBy('3')
+      // Sem participacao primeiro: e o que interessa a quem vai agir.
+      .orderBy('respostas', 'ASC')
+      .addOrderBy('2', 'ASC')
+      .getRawMany<Record<string, string>>();
+
+    // Chaves explicitas por nivel, e nao um 'nome'/'contexto' generico: o
+    // modelo que consome isto nao tem como saber o que 'contexto' significa, e
+    // chegou a rotular a cidade com o nome do estado.
+    return rows.map((r) => ({
+      id: num(r.id),
+      ...(level === RegionLevel.SCHOOL
+        ? { escola: r.escola, cidade: r.cidade }
+        : { cidade: r.cidade, estado: r.estado }),
+      alunosCadastrados: num(r.alunos_cadastrados),
+      partidas: num(r.partidas),
+      respostas: num(r.respostas),
     }));
   }
 }
