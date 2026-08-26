@@ -146,6 +146,17 @@ erro por regra, e no modo Infinito o jogador encerra quando quiser. Nenhum dos
 dois conta como abandono. Compare abandono so dentro dos modos Rapido e
 Classico.
 
+Segundo cuidado, sobre o que o numero cobre: o total de partidas dos
+indicadores conta partidas com AO MENOS UMA resposta. Quem abriu e saiu antes
+de responder qualquer coisa nao esta ali — nao por erro, mas porque partida sem
+resposta nao alimenta nenhuma taxa. Entao o abandono medido e o de quem
+comecou a responder e parou, que e o acionavel. Ao apresentar esse numero, diga
+"partidas com resposta", nunca "partidas iniciadas": sao coisas diferentes.
+
+Desistencia antes da primeira resposta e outro fenomeno, com outra causa
+(primeira pergunta, tempo de carregamento, sessao expirada) e outra acao. Nao
+ha consulta que a meca hoje.
+
 ## Sinal: numeros do dashboard divergindo entre telas
 
 As tres materialized views refletem o ultimo refresh, nao o instante da

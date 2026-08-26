@@ -14,14 +14,21 @@ export class DashboardOverviewDto {
   @ApiProperty({ example: 5400, description: 'Tempo medio de resposta (ms)' })
   tempoMedioMs: number;
 
-  @ApiProperty({ example: 480, description: 'Total de partidas' })
+  @ApiProperty({
+    example: 480,
+    description:
+      'Partidas com AO MENOS UMA resposta. Nao e o total de partidas criadas: quem abriu e ' +
+      'saiu antes de responder nao entra, de proposito — partida sem resposta nao contribui ' +
+      'para nenhuma taxa e so distorceria o denominador.',
+  })
   totalPartidas: number;
 
   @ApiProperty({
     example: 24,
     description:
-      'Partidas com finished_at preenchido. A diferenca para totalPartidas e o abandono. ' +
-      'Cuidado: em Sobrevivencia e Infinito o encerramento e regra do jogo, nao abandono.',
+      'Dessas, quantas tem finished_at preenchido. A diferenca para totalPartidas e o ' +
+      'abandono de quem chegou a responder — que e o abandono que interessa. Cuidado: em ' +
+      'Sobrevivencia e Infinito o encerramento e regra do jogo, nao abandono.',
   })
   partidasFinalizadas: number;
 
