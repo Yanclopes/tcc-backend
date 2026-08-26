@@ -6,7 +6,12 @@ import type {
 } from 'openai/resources/chat/completions';
 import { Repository } from 'typeorm';
 import { AppUser } from '../users/entities/app-user.entity';
-import { PassoDoAssistente, RespostaDoAssistente, TrechoRecuperado } from './chat.types';
+import {
+  EspecificacaoDeGrafico,
+  PassoDoAssistente,
+  RespostaDoAssistente,
+  TrechoRecuperado,
+} from './chat.types';
 import { ChatConversa } from './entities/chat-conversa.entity';
 import { ChatMensagem, PAPEL_ASSISTENTE, PAPEL_USUARIO } from './entities/chat-mensagem.entity';
 import { mensagensDeContexto } from './rag/contexto';
@@ -64,6 +69,14 @@ Como responder:
 
 - Em portugues do Brasil, com markdown quando ajudar. Seja direto: quem le
   conhece a plataforma.
+- Use gerar_grafico quando a resposta comparar varios itens entre si (ODS,
+  regioes, escolas, perguntas). Chame no lugar da consulta, nao alem dela: ela
+  ja devolve os dados. Nao descreva barra por barra no texto — o grafico ja
+  mostra; comente o padrao, o destaque e a ressalva.
+- O grafico e desenhado PELA INTERFACE, acima do seu texto. Nunca escreva
+  markdown de imagem, link, data:image, base64 nem desenho em ASCII: nao existe
+  imagem para embutir, e o resultado seria uma imagem quebrada na tela. Escreva
+  como se o leitor ja estivesse vendo o grafico.
 - Termine numa ACAO POSSIVEL sempre que houver uma. Diga o que fazer e em qual
   tela — por exemplo, revisar o enunciado em /admin/perguntas, ou aprovar a
   escola em /admin/escolas.
@@ -176,6 +189,7 @@ export class ChatService {
         papel: PAPEL_ASSISTENTE,
         conteudo: resposta.conteudo,
         passos: resposta.passos,
+        graficos: resposta.graficos.length ? resposta.graficos : null,
         tokensPrompt: resposta.tokensPrompt,
         tokensSaida: resposta.tokensSaida,
       }),
@@ -200,6 +214,7 @@ export class ChatService {
     historico: ChatMensagem[],
   ): Promise<RespostaDoAssistente> {
     const passos: PassoDoAssistente[] = [];
+    const graficos: EspecificacaoDeGrafico[] = [];
 
     const trechos = await this.retriever.recuperar(pergunta);
     passos.push({
@@ -248,6 +263,7 @@ export class ChatService {
           conteudo: escolha.content?.trim() || '(o modelo nao retornou texto)',
           passos,
           trechosCitados: trechos,
+          graficos,
           tokensPrompt,
           tokensSaida,
         };
@@ -255,7 +271,7 @@ export class ChatService {
 
       mensagens.push(escolha);
       for (const chamada of chamadas) {
-        mensagens.push(await this.executarChamada(chamada, passos));
+        mensagens.push(await this.executarChamada(chamada, passos, graficos));
       }
     }
 
@@ -267,6 +283,7 @@ export class ChatService {
         'Tente uma pergunta mais especifica — por exemplo, delimitando um ODS ou uma cidade.',
       passos,
       trechosCitados: trechos,
+      graficos,
       tokensPrompt,
       tokensSaida,
     };
@@ -276,6 +293,7 @@ export class ChatService {
   private async executarChamada(
     chamada: ChatCompletionMessageToolCall,
     passos: PassoDoAssistente[],
+    graficos: EspecificacaoDeGrafico[],
   ): Promise<ChatCompletionMessageParam> {
     // A tipagem do SDK cobre outros tipos de tool alem de function; so tratamos
     // function, que e o unico que declaramos.
@@ -312,6 +330,15 @@ export class ChatService {
 
     try {
       const retorno = await this.ferramentas.executar(nome, argumentos);
+
+      // A ferramenta de grafico devolve { grafico, dados }: o grafico e anexado
+      // a mensagem e o modelo recebe os dados para comentar. Os numeros que ele
+      // le sao os MESMOS que foram plotados.
+      const comGrafico = retorno as { grafico?: EspecificacaoDeGrafico | null } | null;
+      if (comGrafico && typeof comGrafico === 'object' && comGrafico.grafico) {
+        graficos.push(comGrafico.grafico);
+      }
+
       const serializado = JSON.stringify(retorno);
       passos.push({
         tipo: 'ferramenta',

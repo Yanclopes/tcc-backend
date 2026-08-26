@@ -50,7 +50,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(9);
+      expect(nomes).toHaveLength(10);
     });
 
     it('toda ferramenta declarada tem descricao', () => {
@@ -60,10 +60,17 @@ describe('FerramentasService', () => {
       }
     });
 
-    it('toda ferramenta declarada e executavel', () => {
-      // Impede declarar uma ferramenta e esquecer o case no switch.
+    it('toda ferramenta declarada tem case no switch', async () => {
+      // Impede declarar uma ferramenta e esquecer de trata-la em executar().
+      // gerar_grafico exige 'fonte' — chama-la sem argumento recusa por
+      // validacao, nao por falta de case, entao o teste passa o minimo valido.
+      const argumentosMinimos: Record<string, Record<string, unknown>> = {
+        gerar_grafico: { fonte: 'desempenho_por_ods' },
+      };
+
       for (const declaracao of service.declaracoes) {
-        expect(service.executar(declaracao.function.name, {})).resolves.not.toThrow();
+        const nome = declaracao.function.name;
+        await expect(service.executar(nome, argumentosMinimos[nome] ?? {})).resolves.not.toThrow();
       }
     });
   });
@@ -132,6 +139,43 @@ describe('FerramentasService', () => {
 
       expect(dashboard.coberturaPorOds).toHaveBeenCalled();
       expect(dashboard.byOds).not.toHaveBeenCalled();
+    });
+
+    it('grafico executa a consulta real e devolve os dados junto', async () => {
+      // O modelo escolhe a fonte; os numeros vem da consulta. Ele nunca informa
+      // valor — e o que impede um grafico com dado inventado.
+      dashboard.byOds.mockResolvedValue([
+        { goalNumber: 6, goalName: 'Agua', taxaAcerto: 0.5, totalRespostas: 20 },
+        { goalNumber: 7, goalName: 'Energia', taxaAcerto: 0.25, totalRespostas: 20 },
+      ]);
+
+      const retorno = (await service.executar('gerar_grafico', {
+        fonte: 'desempenho_por_ods',
+        titulo: 'Acerto por ODS',
+      })) as { grafico: { tipo: string; itens: unknown[] }; dados: unknown[] };
+
+      expect(dashboard.byOds).toHaveBeenCalled();
+      expect(retorno.grafico.tipo).toBe('barras');
+      expect(retorno.grafico.itens).toHaveLength(2);
+      expect(retorno.dados).toHaveLength(2);
+    });
+
+    it('grafico rejeita fonte que nao e plotavel', async () => {
+      await expect(service.executar('gerar_grafico', { fonte: 'visao_geral' })).rejects.toThrow(
+        /nao pode virar grafico/i,
+      );
+    });
+
+    it('grafico devolve motivo em vez de estourar quando nao se sustenta', async () => {
+      // Serie zerada: o assistente deve explicar em texto, nao desenhar vazio.
+      dashboard.byOds.mockResolvedValue([]);
+
+      const retorno = (await service.executar('gerar_grafico', {
+        fonte: 'desempenho_por_ods',
+      })) as { grafico: null; motivo: string };
+
+      expect(retorno.grafico).toBeNull();
+      expect(retorno.motivo).toMatch(/nenhuma linha/i);
     });
 
     it('rejeita ferramenta desconhecida', async () => {

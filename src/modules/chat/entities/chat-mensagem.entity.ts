@@ -7,7 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { PassoDoAssistente } from '../chat.types';
+import { EspecificacaoDeGrafico, PassoDoAssistente } from '../chat.types';
 import { ChatConversa } from './chat-conversa.entity';
 
 export const PAPEL_USUARIO = 'usuario';
@@ -40,6 +40,15 @@ export class ChatMensagem {
   })
   @Column({ type: 'jsonb', nullable: true })
   passos?: PassoDoAssistente[] | null;
+
+  @ApiProperty({
+    description:
+      'Graficos montados a partir de consultas reais. Os numeros aqui NUNCA vem do modelo ' +
+      '— ver .specs/06-chat-ia.md secao "Graficos".',
+    nullable: true,
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  graficos?: EspecificacaoDeGrafico[] | null;
 
   @ApiProperty({ example: 1820 })
   @Column({ type: 'int', name: 'tokens_prompt', default: 0 })

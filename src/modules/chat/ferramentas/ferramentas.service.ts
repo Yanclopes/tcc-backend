@@ -4,6 +4,8 @@ import { AnalyticsService } from '../../analytics/analytics.service';
 import { DashboardService } from '../../dashboard/dashboard.service';
 import { DashboardFilterDto } from '../../dashboard/dto/dashboard-filter.dto';
 import { RegionLevel } from '../../dashboard/dto/region-level.enum';
+import { EspecificacaoDeGrafico } from '../chat.types';
+import { FONTES_PLOTAVEIS, GraficoIndisponivelError, montarGrafico } from '../graficos/graficos';
 
 /**
  * As ferramentas que o assistente pode acionar. Ver .specs/06-chat-ia.md.
@@ -120,6 +122,38 @@ export class FerramentasService {
           'do catalogo — e assim que se descobre quais revisar, desativar ou quais estao ' +
           'lentas. Nao filtre por ODS a menos que o usuario tenha delimitado.',
       ),
+      ferramentaComFiltros(
+        'gerar_grafico',
+        'Desenha um grafico a partir de uma das consultas de dados. Use quando a resposta ' +
+          'ficar melhor visual — comparar ODS, regioes, escolas ou perguntas entre si. ' +
+          'Voce escolhe a FONTE e a METRICA; os numeros e os rotulos vem da consulta real, ' +
+          'voce nao os informa. Chame no lugar da consulta, nao alem dela: a ferramenta ja ' +
+          'devolve os dados junto do grafico. Nao existe grafico de linha nem serie ' +
+          'temporal — nenhuma consulta devolve evolucao no tempo.',
+        {
+          fonte: {
+            type: 'string',
+            enum: Object.keys(FONTES_PLOTAVEIS),
+            description: 'Qual consulta alimenta o grafico.',
+          },
+          metrica: {
+            type: 'string',
+            enum: ['taxa', 'respostas', 'tempo', 'perguntas', 'alunos'],
+            description:
+              'O que medir. Nem toda fonte aceita todas: se a metrica nao existir para a ' +
+              'fonte, a padrao e usada.',
+          },
+          titulo: {
+            type: 'string',
+            description: 'Titulo curto e descritivo do grafico, em portugues.',
+          },
+          level: {
+            type: 'string',
+            enum: Object.values(RegionLevel),
+            description: 'Granularidade, quando a fonte for regional ou de cobertura.',
+          },
+        },
+      ),
       ferramenta(
         'cobertura_do_catalogo',
         'Os 17 ODS com quantas perguntas cada um tem CADASTRADAS, quantas ativas, quantas ' +
@@ -185,6 +219,8 @@ export class FerramentasService {
       }
       case 'desempenho_por_pergunta':
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
+      case 'gerar_grafico':
+        return this.gerarGrafico(argumentos);
       case 'cobertura_do_catalogo':
         return this.sanitizar(await this.dashboard.coberturaPorOds());
       case 'cobertura_geografica':
@@ -206,6 +242,46 @@ export class FerramentasService {
       default:
         throw new Error(`Ferramenta desconhecida: '${nome}'.`);
     }
+  }
+
+  /**
+   * Executa a consulta pedida e devolve o grafico montado a partir dela.
+   *
+   * O modelo nao ve os numeros antes: ele escolhe a fonte, nos executamos. Isso
+   * elimina a possibilidade de um grafico com valor inventado — que seria pior
+   * que um texto inventado, porque grafico tem aparencia de autoridade.
+   */
+  private async gerarGrafico(argumentos: Record<string, unknown>): Promise<unknown> {
+    const fonte = typeof argumentos.fonte === 'string' ? argumentos.fonte : '';
+    if (!FONTES_PLOTAVEIS[fonte]) {
+      throw new Error(
+        `Fonte '${fonte}' nao pode virar grafico. Disponiveis: ` +
+          `${Object.keys(FONTES_PLOTAVEIS).join(', ')}.`,
+      );
+    }
+
+    const linhas = await this.executar(fonte, argumentos);
+
+    let grafico: EspecificacaoDeGrafico;
+    try {
+      grafico = montarGrafico({
+        fonte,
+        linhas,
+        metrica: typeof argumentos.metrica === 'string' ? argumentos.metrica : undefined,
+        titulo: typeof argumentos.titulo === 'string' ? argumentos.titulo : undefined,
+      });
+    } catch (erro) {
+      if (erro instanceof GraficoIndisponivelError) {
+        // Devolve como retorno normal (nao excecao) para o modelo explicar em
+        // texto na mesma volta, em vez de tentar de novo.
+        return { grafico: null, motivo: erro.message, dados: linhas };
+      }
+      throw erro;
+    }
+
+    // Os dados acompanham o grafico: o modelo precisa deles para comentar a
+    // resposta, e sao os MESMOS numeros que foram plotados.
+    return { grafico, dados: linhas };
   }
 
   /** Converte os argumentos do modelo no DTO de filtro, ignorando o que nao serve. */

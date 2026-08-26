@@ -48,6 +48,45 @@ export interface RespostaDoAssistente {
   conteudo: string;
   passos: PassoDoAssistente[];
   trechosCitados: TrechoRecuperado[];
+  graficos: EspecificacaoDeGrafico[];
   tokensPrompt: number;
   tokensSaida: number;
+}
+
+// ---------------------------------------------------------------------------
+// Graficos
+// ---------------------------------------------------------------------------
+
+/** Como o valor deve ser lido e formatado. */
+export type FormatoDeValor = 'percentual' | 'contagem' | 'tempo';
+
+/** Uma barra (ou o valor unico de um indicador). */
+export interface ItemDoGrafico {
+  rotulo: string;
+  /** Valor bruto, ja no formato indicado por `formato`. */
+  valor: number;
+  /** 0..1 — comprimento relativo da barra. Calculado no back-end. */
+  proporcao: number;
+  /** Linha secundaria: quase sempre o N que sustenta o valor. */
+  detalhe?: string;
+  /** Cor da barra. So preenchida quando a cor carrega identidade (ODS). */
+  cor?: string;
+}
+
+/**
+ * Um grafico pronto para renderizar.
+ *
+ * Montado inteiramente no back-end a partir do retorno de uma consulta real. O
+ * modelo escolhe a forma e a fonte; nunca os numeros nem o que vai no eixo.
+ */
+export interface EspecificacaoDeGrafico {
+  /** 'indicador' quando ha um valor so — grafico de uma barra e ruido. */
+  tipo: 'barras' | 'indicador';
+  titulo: string;
+  formato: FormatoDeValor;
+  itens: ItemDoGrafico[];
+  /** Qual ferramenta produziu os dados. Aparece como procedencia na interface. */
+  fonte: string;
+  /** Ressalva exibida junto ao grafico (ex.: lista truncada, amostra pequena). */
+  nota?: string;
 }
