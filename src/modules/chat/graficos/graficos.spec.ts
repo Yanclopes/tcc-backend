@@ -157,6 +157,127 @@ describe('montarGrafico', () => {
     });
   });
 
+  describe('matriz (heatmap)', () => {
+    const cruzamento = [
+      { educationLevelName: 'Ensino Medio', goalNumber: 2, taxaAcerto: 0.7, totalRespostas: 10 },
+      { educationLevelName: 'Ensino Medio', goalNumber: 10, taxaAcerto: 0.4, totalRespostas: 20 },
+      { educationLevelName: 'Ensino Superior', goalNumber: 2, taxaAcerto: 0.5, totalRespostas: 30 },
+    ];
+
+    it('monta celulas com os dois eixos', () => {
+      const g = montarGrafico({
+        fonte: 'desempenho_por_escolaridade',
+        linhas: cruzamento,
+        forma: 'matriz',
+      });
+
+      expect(g.tipo).toBe('matriz');
+      expect(g.celulas).toHaveLength(3);
+      expect(g.linhas).toEqual(['Ensino Medio', 'Ensino Superior']);
+    });
+
+    it('ordena as colunas pelo numero do ODS, nao alfabeticamente', () => {
+      // Ordem alfabetica poria "ODS 10" antes de "ODS 2".
+      const g = montarGrafico({
+        fonte: 'desempenho_por_escolaridade',
+        linhas: cruzamento,
+        forma: 'matriz',
+      });
+
+      expect(g.colunas).toEqual(['ODS 2', 'ODS 10']);
+    });
+
+    it('normaliza a intensidade pelo maior valor da matriz', () => {
+      const g = montarGrafico({
+        fonte: 'desempenho_por_escolaridade',
+        linhas: cruzamento,
+        forma: 'matriz',
+      });
+
+      const maior = g.celulas?.find((c) => c.valor === 70);
+      expect(maior?.intensidade).toBe(1);
+    });
+
+    it('avisa quantos cruzamentos ficaram sem dado', () => {
+      // 2 linhas x 2 colunas = 4 celulas possiveis, 3 preenchidas.
+      const g = montarGrafico({
+        fonte: 'desempenho_por_escolaridade',
+        linhas: cruzamento,
+        forma: 'matriz',
+      });
+
+      expect(g.nota).toMatch(/1 cruzamento\(s\) sem nenhuma resposta/);
+    });
+
+    it('recusa matriz para fonte de uma dimensao so', () => {
+      expect(() =>
+        montarGrafico({ fonte: 'desempenho_por_ods', linhas: [linhaOds(1, 0.5)], forma: 'matriz' }),
+      ).toThrow(/nao tem duas dimensoes/i);
+    });
+  });
+
+  describe('barras agrupadas', () => {
+    const cobertura = [
+      { goalNumber: 4, goalName: 'Educacao', perguntasCadastradas: 3, perguntasComResposta: 3 },
+      { goalNumber: 3, goalName: 'Saude', perguntasCadastradas: 0, perguntasComResposta: 0 },
+    ];
+
+    it('monta duas series com a mesma unidade', () => {
+      const g = montarGrafico({
+        fonte: 'cobertura_do_catalogo',
+        linhas: cobertura,
+        forma: 'barras_agrupadas',
+      });
+
+      expect(g.tipo).toBe('barras_agrupadas');
+      expect(g.series).toHaveLength(2);
+      expect(g.series?.[0].valores).toEqual([3, 0]);
+    });
+
+    it('alinha os valores das series com a ordem das categorias', () => {
+      const g = montarGrafico({
+        fonte: 'cobertura_do_catalogo',
+        linhas: cobertura,
+        forma: 'barras_agrupadas',
+      });
+
+      expect(g.itens[0].rotulo).toBe('ODS 4');
+      expect(g.series?.[1].valores[0]).toBe(3);
+    });
+
+    it('recusa quando as duas series estao zeradas', () => {
+      expect(() =>
+        montarGrafico({
+          fonte: 'cobertura_do_catalogo',
+          linhas: [{ goalNumber: 3, perguntasCadastradas: 0, perguntasComResposta: 0 }],
+          forma: 'barras_agrupadas',
+        }),
+      ).toThrow(/zerad/i);
+    });
+
+    it('recusa agrupamento para fonte sem duas medidas comparaveis', () => {
+      expect(() =>
+        montarGrafico({
+          fonte: 'desempenho_por_regiao',
+          linhas: [{ regionLabel: 'A', taxaAcerto: 0.5, totalRespostas: 10 }],
+          forma: 'barras_agrupadas',
+        }),
+      ).toThrow(/nao tem duas medidas/i);
+    });
+
+    it('recusa agrupar medidas de unidades diferentes', () => {
+      // alunos cadastrados x respostas: escalas que diferem por ordens de
+      // grandeza. Lado a lado no mesmo eixo, a barra menor some.
+      expect(() =>
+        montarGrafico({
+          fonte: 'cobertura_geografica',
+          linhas: [{ escola: 'UNIDAVI', alunosCadastrados: 2, respostas: 67 }],
+          forma: 'barras_agrupadas',
+        }),
+      ).toThrow(/nao tem duas medidas/i);
+    });
+  });
+
   describe('cor', () => {
     it('usa a cor oficial da ONU quando a categoria e um ODS', () => {
       // Aqui a cor e IDENTIDADE do ODS — segue a entidade, nao o ranking.

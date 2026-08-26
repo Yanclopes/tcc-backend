@@ -1,4 +1,9 @@
-import { EspecificacaoDeGrafico, FormatoDeValor, ItemDoGrafico } from '../chat.types';
+import {
+  CelulaDoGrafico,
+  EspecificacaoDeGrafico,
+  FormatoDeValor,
+  ItemDoGrafico,
+} from '../chat.types';
 
 /**
  * Converte o retorno de uma consulta em um grafico.
@@ -177,6 +182,158 @@ function montarItens(linhas: Record<string, unknown>[], fonte: Fonte, metrica: M
 }
 
 /**
+ * Cruzamentos plotaveis como matriz (heatmap).
+ *
+ * Uma matriz e a forma certa quando o dado tem DUAS dimensoes: escolaridade x
+ * ODS em barras viraria uma parede de 68 barras, ilegivel. Nao ha outra forma
+ * que mostre "onde, no cruzamento, esta o ponto fraco".
+ */
+const MATRIZES: Record<
+  string,
+  { linha: (l: Record<string, unknown>) => string; coluna: (l: Record<string, unknown>) => string }
+> = {
+  desempenho_por_escolaridade: {
+    linha: (l) => texto(l.educationLevelName),
+    // goalNumber, nunca goalId: o id e autoincrement e muda em um reseed.
+    coluna: (l) => `ODS ${numero(l.goalNumber)}`,
+  },
+};
+
+/** Pares de medidas comparaveis lado a lado — MESMA unidade, mesmo eixo. */
+const AGRUPAMENTOS: Record<
+  string,
+  {
+    rotulo: (l: Record<string, unknown>) => string;
+    formato: FormatoDeValor;
+    series: Array<{ nome: string; cor: string; valor: (l: Record<string, unknown>) => number }>;
+  }
+> = {
+  cobertura_do_catalogo: {
+    rotulo: (l) => `ODS ${numero(l.goalNumber)}`,
+    formato: 'contagem',
+    // Duas contagens de PERGUNTAS: mesma unidade e escalas comparaveis (uma e
+    // subconjunto da outra). Este e o criterio para entrar aqui — medidas de
+    // unidades diferentes lado a lado no mesmo eixo enganam.
+    series: [
+      { nome: 'Cadastradas', cor: '#0a97d9', valor: (l) => numero(l.perguntasCadastradas) },
+      { nome: 'Ja respondidas', cor: '#f59e0b', valor: (l) => numero(l.perguntasComResposta) },
+    ],
+  },
+};
+
+/*
+ * Por que cobertura_geografica NAO esta aqui: as medidas disponiveis sao alunos
+ * cadastrados e respostas — unidades diferentes, em escalas que diferem por
+ * ordens de grandeza (2 alunos ao lado de 67 respostas). Lado a lado no mesmo
+ * eixo, a barra menor vira um traco invisivel e a comparacao engana. Duas
+ * escalas num grafico so inventam uma relacao que nao esta no dado. Para essa
+ * pergunta, dois graficos separados ou a tabela comunicam melhor.
+ */
+
+export const FONTES_DE_MATRIZ = Object.keys(MATRIZES);
+export const FONTES_AGRUPAVEIS = Object.keys(AGRUPAMENTOS);
+
+/** Monta um heatmap a partir de linhas que trazem duas dimensoes. */
+function montarMatriz(
+  fonteNome: string,
+  linhas: Record<string, unknown>[],
+  titulo: string,
+): EspecificacaoDeGrafico {
+  const eixos = MATRIZES[fonteNome];
+  const celulas: CelulaDoGrafico[] = linhas.map((l) => ({
+    linha: eixos.linha(l),
+    coluna: eixos.coluna(l),
+    valor: Math.round(numero(l.taxaAcerto) * 10000) / 100,
+    intensidade: 0,
+    detalhe: respostasComoDetalhe(l),
+  }));
+
+  // Intensidade normalizada pelo maior valor: a rampa so compara dentro do
+  // proprio heatmap.
+  const maior = Math.max(...celulas.map((c) => c.valor ?? 0), 0);
+  for (const celula of celulas) {
+    celula.intensidade = maior > 0 ? (celula.valor ?? 0) / maior : 0;
+  }
+
+  const linhasDoEixo = [...new Set(celulas.map((c) => c.linha))].sort();
+  // Colunas em ordem numerica do ODS, nao alfabetica ("ODS 10" antes de "ODS 2").
+  const colunas = [...new Set(celulas.map((c) => c.coluna))].sort(
+    (a, b) =>
+      (Number.parseInt(a.replace(/\D/g, ''), 10) || 0) -
+      (Number.parseInt(b.replace(/\D/g, ''), 10) || 0),
+  );
+
+  const vazias = linhasDoEixo.length * colunas.length - celulas.length;
+  const fracas = linhas.filter((l) => numero(l.totalRespostas) < 10).length;
+  const notas: string[] = [];
+  if (vazias > 0) notas.push(`${vazias} cruzamento(s) sem nenhuma resposta.`);
+  if (fracas > 0)
+    notas.push(`${fracas} celula(s) com menos de 10 respostas — percentual instavel.`);
+
+  return {
+    tipo: 'matriz',
+    titulo,
+    formato: 'percentual',
+    itens: [],
+    celulas,
+    linhas: linhasDoEixo,
+    colunas,
+    fonte: fonteNome,
+    nota: notas.length ? notas.join(' ') : undefined,
+  };
+}
+
+/** Monta barras agrupadas: duas medidas da mesma unidade por categoria. */
+function montarAgrupado(
+  fonteNome: string,
+  linhas: Record<string, unknown>[],
+  titulo: string,
+): EspecificacaoDeGrafico {
+  const config = AGRUPAMENTOS[fonteNome];
+
+  // Ordena pela primeira serie e corta: 15 categorias x 2 barras ja e denso.
+  const ordenadas = [...linhas]
+    .sort((a, b) => config.series[0].valor(b) - config.series[0].valor(a))
+    .slice(0, MAXIMO_DE_BARRAS);
+
+  const maior = Math.max(
+    ...ordenadas.flatMap((l) => config.series.map((serie) => serie.valor(l))),
+    0,
+  );
+
+  const itens: ItemDoGrafico[] = ordenadas.map((l) => ({
+    rotulo: config.rotulo(l),
+    valor: config.series[0].valor(l),
+    proporcao: maior > 0 ? config.series[0].valor(l) / maior : 0,
+  }));
+
+  const series = config.series.map((serie) => ({
+    nome: serie.nome,
+    cor: serie.cor,
+    valores: ordenadas.map((l) => serie.valor(l)),
+  }));
+
+  if (series.every((serie) => serie.valores.every((v) => v === 0))) {
+    throw new GraficoIndisponivelError(
+      'Todas as series estao zeradas — o grafico nao comunicaria nada. Explique em texto.',
+    );
+  }
+
+  const truncados = linhas.length - ordenadas.length;
+
+  return {
+    tipo: 'barras_agrupadas',
+    titulo,
+    formato: config.formato,
+    itens,
+    series,
+    fonte: fonteNome,
+    nota:
+      truncados > 0 ? `Mostrando os ${ordenadas.length} maiores de ${linhas.length}.` : undefined,
+  };
+}
+
+/**
  * Monta o grafico a partir das linhas de uma consulta ja executada.
  *
  * Lanca GraficoIndisponivelError quando a visualizacao nao se sustenta — nesses
@@ -187,7 +344,37 @@ export function montarGrafico(params: {
   linhas: unknown;
   metrica?: string;
   titulo?: string;
+  /** Forma pedida. Padrao 'barras'; 'indicador' e decidido automaticamente. */
+  forma?: 'barras' | 'matriz' | 'barras_agrupadas';
 }): EspecificacaoDeGrafico {
+  const forma = params.forma ?? 'barras';
+
+  if (forma === 'matriz' || forma === 'barras_agrupadas') {
+    if (!Array.isArray(params.linhas) || params.linhas.length === 0) {
+      throw new GraficoIndisponivelError('A consulta nao devolveu nenhuma linha para plotar.');
+    }
+    const linhas = params.linhas as Record<string, unknown>[];
+    const titulo = params.titulo?.trim() || 'Comparativo';
+
+    if (forma === 'matriz') {
+      if (!MATRIZES[params.fonte]) {
+        throw new GraficoIndisponivelError(
+          `A fonte '${params.fonte}' nao tem duas dimensoes para cruzar. Fontes com matriz: ` +
+            `${FONTES_DE_MATRIZ.join(', ')}.`,
+        );
+      }
+      return montarMatriz(params.fonte, linhas, titulo);
+    }
+
+    if (!AGRUPAMENTOS[params.fonte]) {
+      throw new GraficoIndisponivelError(
+        `A fonte '${params.fonte}' nao tem duas medidas comparaveis. Fontes agrupaveis: ` +
+          `${FONTES_AGRUPAVEIS.join(', ')}.`,
+      );
+    }
+    return montarAgrupado(params.fonte, linhas, titulo);
+  }
+
   const fonte = FONTES_PLOTAVEIS[params.fonte];
   if (!fonte) {
     throw new GraficoIndisponivelError(

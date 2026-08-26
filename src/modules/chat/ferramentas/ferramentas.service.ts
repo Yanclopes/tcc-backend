@@ -5,7 +5,13 @@ import { DashboardService } from '../../dashboard/dashboard.service';
 import { DashboardFilterDto } from '../../dashboard/dto/dashboard-filter.dto';
 import { RegionLevel } from '../../dashboard/dto/region-level.enum';
 import { EspecificacaoDeGrafico } from '../chat.types';
-import { FONTES_PLOTAVEIS, GraficoIndisponivelError, montarGrafico } from '../graficos/graficos';
+import {
+  FONTES_AGRUPAVEIS,
+  FONTES_DE_MATRIZ,
+  FONTES_PLOTAVEIS,
+  GraficoIndisponivelError,
+  montarGrafico,
+} from '../graficos/graficos';
 
 /**
  * As ferramentas que o assistente pode acionar. Ver .specs/06-chat-ia.md.
@@ -128,13 +134,24 @@ export class FerramentasService {
           'ficar melhor visual — comparar ODS, regioes, escolas ou perguntas entre si. ' +
           'Voce escolhe a FONTE e a METRICA; os numeros e os rotulos vem da consulta real, ' +
           'voce nao os informa. Chame no lugar da consulta, nao alem dela: a ferramenta ja ' +
-          'devolve os dados junto do grafico. Nao existe grafico de linha nem serie ' +
+          'devolve os dados junto do grafico. Escolha a FORMA conforme o dado. ' +
+          'Nao existe grafico de linha nem serie ' +
           'temporal — nenhuma consulta devolve evolucao no tempo.',
         {
           fonte: {
             type: 'string',
-            enum: Object.keys(FONTES_PLOTAVEIS),
+            enum: [...new Set([...Object.keys(FONTES_PLOTAVEIS), ...FONTES_DE_MATRIZ])],
             description: 'Qual consulta alimenta o grafico.',
+          },
+          forma: {
+            type: 'string',
+            enum: ['barras', 'matriz', 'barras_agrupadas'],
+            description:
+              "'barras' (padrao) compara UMA medida entre categorias. 'matriz' cruza DUAS " +
+              `dimensoes num heatmap — so para: ${FONTES_DE_MATRIZ.join(', ')}; use quando a ` +
+              'pergunta cruzar escolaridade com ODS. ' +
+              "'barras_agrupadas' poe duas medidas da mesma unidade lado a lado — so para: " +
+              `${FONTES_AGRUPAVEIS.join(', ')}; use para contrastar cadastrado x respondido.`,
           },
           metrica: {
             type: 'string',
@@ -253,7 +270,10 @@ export class FerramentasService {
    */
   private async gerarGrafico(argumentos: Record<string, unknown>): Promise<unknown> {
     const fonte = typeof argumentos.fonte === 'string' ? argumentos.fonte : '';
-    if (!FONTES_PLOTAVEIS[fonte]) {
+    const formasValidas = ['barras', 'matriz', 'barras_agrupadas'] as const;
+    const forma = formasValidas.find((f) => f === argumentos.forma) ?? 'barras';
+
+    if (!FONTES_PLOTAVEIS[fonte] && !FONTES_DE_MATRIZ.includes(fonte)) {
       throw new Error(
         `Fonte '${fonte}' nao pode virar grafico. Disponiveis: ` +
           `${Object.keys(FONTES_PLOTAVEIS).join(', ')}.`,
@@ -269,6 +289,7 @@ export class FerramentasService {
         linhas,
         metrica: typeof argumentos.metrica === 'string' ? argumentos.metrica : undefined,
         titulo: typeof argumentos.titulo === 'string' ? argumentos.titulo : undefined,
+        forma,
       });
     } catch (erro) {
       if (erro instanceof GraficoIndisponivelError) {
