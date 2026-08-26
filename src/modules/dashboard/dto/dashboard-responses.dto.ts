@@ -34,6 +34,14 @@ export class OdsBreakdownRowDto {
   @ApiProperty({ example: 210 })
   totalAcertos: number;
 
+  @ApiProperty({
+    example: 3,
+    description:
+      'Quantas perguntas distintas sustentam a taxa. Taxa apoiada em uma unica ' +
+      'pergunta mede aquela pergunta, nao o ODS.',
+  })
+  perguntasDistintas: number;
+
   @ApiProperty({ example: 0.6563 })
   taxaAcerto: number;
 

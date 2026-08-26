@@ -1,9 +1,9 @@
 import { DocumentoDeConhecimento } from '../chat.types';
-import { catalogoAnalises } from './catalogo-analises';
 import { dicionarioDeDados } from './dicionario-de-dados';
 import { metricas } from './metricas';
+import { playbookOperacional } from './playbook-operacional';
+import { quandoNaoAgir } from './quando-nao-agir';
 import { regrasDoJogo } from './regras-do-jogo';
-import { ressalvas } from './ressalvas';
 
 /**
  * Fonte A do corpus: base curada, escrita para o assistente.
@@ -17,6 +17,6 @@ export const BASE_CURADA: DocumentoDeConhecimento[] = [
   metricas,
   regrasDoJogo,
   dicionarioDeDados,
-  catalogoAnalises,
-  ressalvas,
+  playbookOperacional,
+  quandoNaoAgir,
 ];

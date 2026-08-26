@@ -93,8 +93,9 @@ export class FerramentasService {
       ),
       ferramentaComFiltros(
         'desempenho_por_ods',
-        'Taxa de acerto por ODS, calculada no momento da consulta. Use para comparar ' +
-          'objetivos entre si ou achar o ODS com melhor/pior desempenho.',
+        'Taxa de acerto por ODS, calculada no momento da consulta. Traz tambem o total ' +
+          'de respostas (N) e quantas perguntas distintas sustentam cada taxa. Use para ' +
+          'comparar objetivos entre si ou achar o ODS com melhor/pior desempenho.',
       ),
       ferramentaComFiltros(
         'desempenho_por_regiao',

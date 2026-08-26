@@ -94,6 +94,10 @@ export class DashboardService {
       .addSelect('g.name', 'goal_name')
       .addSelect('COUNT(ga.id)', 'total_respostas')
       .addSelect('COUNT(*) FILTER (WHERE ga.is_correct)', 'total_acertos')
+      // Quantas perguntas distintas sustentam a taxa. Um ODS com taxa baixa
+      // apoiada numa unica pergunta mede aquela pergunta, nao o ODS — sem este
+      // campo nao ha como o leitor (nem o assistente de IA) saber a diferenca.
+      .addSelect('COUNT(DISTINCT ga.question)', 'perguntas_distintas')
       .addSelect('ROUND(AVG((ga.is_correct)::int), 4)', 'taxa_acerto')
       .addSelect('ROUND(AVG(ga.response_time_ms))', 'tempo_medio_ms')
       .groupBy('g.number')
@@ -106,6 +110,7 @@ export class DashboardService {
       goalName: r.goal_name,
       totalRespostas: num(r.total_respostas),
       totalAcertos: num(r.total_acertos),
+      perguntasDistintas: num(r.perguntas_distintas),
       taxaAcerto: num(r.taxa_acerto),
       tempoMedioMs: num(r.tempo_medio_ms),
     }));
