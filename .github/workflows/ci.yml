@@ -43,7 +43,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        # Precisa da extensao 'vector' para a migration do modulo de chat.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ods
           POSTGRES_PASSWORD: ods_secret

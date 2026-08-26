@@ -5,7 +5,12 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 e a postgres:16 oficial com a extensao 'vector'
+    # ja compilada (usada pelo modulo de chat com IA). O pgvector NAO publica
+    # variante Alpine, entao a base muda de musl para glibc — o que altera a
+    # collation. Ao migrar de um volume criado na imagem alpine, faca
+    # dump/restore em volume novo; ver .specs/06-chat-ia.md.
+    image: pgvector/pgvector:pg16
     container_name: ods_postgres
     restart: unless-stopped
     environment:

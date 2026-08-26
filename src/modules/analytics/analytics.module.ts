@@ -12,5 +12,8 @@ import { MvDesempenhoPorEscolaridade } from './entities/mv-desempenho-por-escola
   ],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
+  // Exportado para o modulo de chat, que reaproveita os agregados como
+  // ferramentas do assistente (ver .specs/06-chat-ia.md).
+  exports: [AnalyticsService],
 })
 export class AnalyticsModule {}

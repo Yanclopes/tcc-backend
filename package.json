@@ -31,7 +31,9 @@
     "migration:run:prod": "npm run typeorm:prod -- migration:run",
     "migration:revert:prod": "npm run typeorm:prod -- migration:revert",
     "seed:prod": "node dist/seed/seed.js",
-    "seed:prod:geo": "node dist/seed/seed-geo.js"
+    "seed:prod:geo": "node dist/seed/seed-geo.js",
+    "chat:indexar": "ts-node -r tsconfig-paths/register src/modules/chat/indexar.ts",
+    "chat:indexar:prod": "node dist/modules/chat/indexar.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -53,6 +55,7 @@
     "helmet": "^8.3.0",
     "ioredis": "^5.4.2",
     "nestjs-pino": "^4.6.1",
+    "openai": "^6.49.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.23.0",
