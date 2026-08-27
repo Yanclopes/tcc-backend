@@ -33,7 +33,8 @@
     "seed:prod": "node dist/seed/seed.js",
     "seed:prod:geo": "node dist/seed/seed-geo.js",
     "chat:indexar": "ts-node -r tsconfig-paths/register src/modules/chat/indexar.ts",
-    "chat:indexar:prod": "node dist/modules/chat/indexar.js"
+    "chat:indexar:prod": "node dist/modules/chat/indexar.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -107,7 +108,12 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "isolatedModules": true
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
@@ -116,6 +122,7 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1"
-    }
+    },
+    "testTimeout": 20000
   }
 }
