@@ -33,7 +33,11 @@ DB_USER="${DB_USERNAME:-ods}"
 DB_NAME="${DB_DATABASE:-ods_quiz}"
 IMAGEM_NOVA="pgvector/pgvector:pg16"
 
-BACKUP="${BACKUP:-$HOME/pre-pgvector-$(date +%Y%m%dT%H%M%S).sql}"
+# HOME nao existe quando o script roda por SSM ou cron, e `set -u` transforma
+# isso em erro fatal. O fallback mantem o script utilizavel nos dois contextos.
+DESTINO="${HOME:-/home/ubuntu}"
+[ -d "$DESTINO" ] || DESTINO=/tmp
+BACKUP="${BACKUP:-$DESTINO/pre-pgvector-$(date +%Y%m%dT%H%M%S).sql}"
 
 erro() { echo "ERRO: $*" >&2; exit 1; }
 passo() { echo; echo "==> $*"; }
