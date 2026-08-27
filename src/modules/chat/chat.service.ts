@@ -105,6 +105,34 @@ Como responder:
 `.trim();
 
 /**
+ * Instrucao da chamada que gera as respostas rapidas.
+ *
+ * E uma chamada separada, curta e com a ferramenta FORCADA, por um motivo
+ * medido: pedir no prompt principal nao funciona. O modelo termina com texto e
+ * simplesmente nao faz a chamada extra, por mais explicita que seja a regra —
+ * uma vez que ele tem a resposta, ele responde. Forcar a ferramenta torna
+ * deterministico o que a instrucao nao conseguia garantir.
+ *
+ * O custo e uma chamada pequena por mensagem: so a pergunta e a resposta, sem
+ * contexto recuperado nem historico.
+ */
+const INSTRUCAO_DE_OPCOES = `
+Voce recebe uma pergunta feita ao painel administrativo do Desafio ODS e a
+resposta que foi dada. Sugira de 2 a 4 proximos passos que o administrador
+provavelmente vai querer, como frases curtas escritas NA VOZ DELE — sao o texto
+que sera enviado quando ele clicar.
+
+Boas opcoes sao acionaveis e especificas: "Aprovar para Ensino Medio",
+"Vincular a escola existente", "Desativar a pergunta 18", "Ver por escola".
+Evite generico ("Saber mais", "Continuar") e evite repetir o que a resposta ja
+entregou.
+
+Se a resposta esta completa e nao ha proximo passo obvio — ou se ela foi uma
+recusa por falta de dado —, devolva uma lista VAZIA. Botao inutil e pior que
+nenhum botao.
+`.trim();
+
+/**
  * Orquestra uma pergunta: recupera contexto, monta o prompt, roda o laco de
  * ferramentas e persiste. Ver .specs/06-chat-ia.md.
  */
@@ -208,6 +236,7 @@ export class ChatService {
         passos: resposta.passos,
         graficos: resposta.graficos.length ? resposta.graficos : null,
         acoes: resposta.acoes.length ? resposta.acoes : null,
+        sugestoes: resposta.sugestoes.length ? resposta.sugestoes : null,
         tokensPrompt: resposta.tokensPrompt,
         tokensSaida: resposta.tokensSaida,
       }),
@@ -284,6 +313,7 @@ export class ChatService {
           trechosCitados: trechos,
           graficos,
           acoes,
+          sugestoes: await this.sugerirOpcoes(pergunta, escolha.content ?? ''),
           tokensPrompt,
           tokensSaida,
         };
@@ -305,9 +335,47 @@ export class ChatService {
       trechosCitados: trechos,
       graficos,
       acoes,
+      sugestoes: [],
       tokensPrompt,
       tokensSaida,
     };
+  }
+
+  /**
+   * Gera as respostas rapidas numa chamada propria, com a ferramenta forcada.
+   *
+   * Nunca derruba a resposta: se falhar, a mensagem vai sem botoes. Eles sao
+   * conveniencia, e ficar sem eles e melhor que perder a resposta inteira.
+   */
+  private async sugerirOpcoes(pergunta: string, resposta: string): Promise<string[]> {
+    if (!resposta.trim()) return [];
+
+    try {
+      const conclusao = await this.openai.chat.completions.create({
+        model: this.openai.modeloChat,
+        messages: [
+          { role: 'system', content: INSTRUCAO_DE_OPCOES },
+          { role: 'user', content: `Pergunta: ${pergunta}\n\nResposta dada:\n${resposta}` },
+        ],
+        tools: this.ferramentas.declaracoes.filter((d) => d.function.name === 'oferecer_opcoes'),
+        tool_choice: { type: 'function', function: { name: 'oferecer_opcoes' } },
+      });
+
+      const chamada = conclusao.choices[0]?.message?.tool_calls?.[0];
+      if (!chamada || chamada.type !== 'function') return [];
+
+      const retorno = (await this.ferramentas.executar(
+        'oferecer_opcoes',
+        JSON.parse(chamada.function.arguments || '{}') as Record<string, unknown>,
+      )) as { opcoes?: string[] };
+
+      return retorno.opcoes ?? [];
+    } catch (erro) {
+      this.logger.warn(
+        `Falha ao gerar respostas rapidas: ${erro instanceof Error ? erro.message : String(erro)}`,
+      );
+      return [];
+    }
   }
 
   /** Executa uma chamada de ferramenta e devolve a mensagem de retorno. */

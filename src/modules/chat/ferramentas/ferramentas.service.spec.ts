@@ -74,7 +74,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(13);
+      expect(nomes).toHaveLength(14);
     });
 
     it('toda ferramenta declarada tem descricao', () => {
@@ -201,6 +201,29 @@ describe('FerramentasService', () => {
 
       expect(retorno.grafico).toBeNull();
       expect(retorno.motivo).toMatch(/nenhuma linha/i);
+    });
+
+    it('limita as opcoes rapidas a quatro', async () => {
+      // Mais que isso vira menu e o administrador para de ler.
+      const retorno = (await service.executar('oferecer_opcoes', {
+        opcoes: ['a', 'b', 'c', 'd', 'e', 'f'],
+      })) as { opcoes: string[] };
+
+      expect(retorno.opcoes).toHaveLength(4);
+    });
+
+    it('descarta opcao vazia ou longa demais para caber no botao', async () => {
+      const retorno = (await service.executar('oferecer_opcoes', {
+        opcoes: ['Aprovar', '   ', 'x'.repeat(200)],
+      })) as { opcoes: string[] };
+
+      expect(retorno.opcoes).toEqual(['Aprovar']);
+    });
+
+    it('devolve lista vazia quando o modelo nao manda opcoes', async () => {
+      const retorno = (await service.executar('oferecer_opcoes', {})) as { opcoes: string[] };
+
+      expect(retorno.opcoes).toEqual([]);
     });
 
     it('rejeita ferramenta desconhecida', async () => {

@@ -59,6 +59,15 @@ export class ChatMensagem {
   @Column({ type: 'jsonb', nullable: true })
   acoes?: AcaoProposta[] | null;
 
+  @ApiProperty({
+    description:
+      'Respostas rapidas oferecidas ao fim da mensagem. Sao texto pre-preenchido: clicar ' +
+      'envia a frase como pergunta. Nao executam nada.',
+    nullable: true,
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  sugestoes?: string[] | null;
+
   @ApiProperty({ example: 1820 })
   @Column({ type: 'int', name: 'tokens_prompt', default: 0 })
   tokensPrompt: number;

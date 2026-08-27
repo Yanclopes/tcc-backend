@@ -50,6 +50,8 @@ export interface RespostaDoAssistente {
   trechosCitados: TrechoRecuperado[];
   graficos: EspecificacaoDeGrafico[];
   acoes: AcaoProposta[];
+  /** Respostas rapidas: frases prontas que viram a proxima pergunta ao clique. */
+  sugestoes: string[];
   tokensPrompt: number;
   tokensSaida: number;
 }

@@ -65,6 +65,12 @@ export class MensagemDto {
   })
   acoes?: AcaoProposta[] | null;
 
+  @ApiPropertyOptional({
+    description: 'Respostas rapidas. Clicar envia a frase como proxima pergunta.',
+    example: ['Aprovar a sugestao', 'Vincular a escola existente', 'Rejeitar'],
+  })
+  sugestoes?: string[] | null;
+
   @ApiProperty()
   criadaEm: Date;
 }

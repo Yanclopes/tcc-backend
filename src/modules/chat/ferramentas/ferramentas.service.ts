@@ -174,6 +174,22 @@ export class FerramentasService {
         },
       ),
       ferramenta(
+        'oferecer_opcoes',
+        'Oferece de 2 a 4 respostas rapidas ao fim da sua mensagem, para o administrador ' +
+          'clicar em vez de digitar. Use SEMPRE que voce terminar perguntando o que ele quer ' +
+          'fazer — "aprovar ou rejeitar?", "qual escolaridade?", "desativo ou deixo rodar?". ' +
+          'Cada opcao e uma frase curta escrita como se o ADMINISTRADOR a estivesse dizendo ' +
+          '(ex.: "Aprovar para Ensino Medio"), porque e isso que sera enviado ao clicar. ' +
+          'Nao ofereca opcoes quando a resposta ja esta completa e nao ha proximo passo.',
+        {
+          opcoes: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'De 2 a 4 frases curtas, na voz do administrador.',
+          },
+        },
+      ),
+      ferramenta(
         'listar_sugestoes_escola',
         'Sugestoes de escola enviadas por alunos que AGUARDAM decisao, com a cidade e a ' +
           'escola parecida ja existente quando houver. Use sempre que a pergunta for sobre ' +
@@ -307,6 +323,8 @@ export class FerramentasService {
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
       case 'gerar_grafico':
         return this.gerarGrafico(argumentos);
+      case 'oferecer_opcoes':
+        return { opcoes: this.normalizarOpcoes(argumentos.opcoes) };
       case 'listar_sugestoes_escola':
         return this.sanitizar(await this.acoes.listarSugestoesPendentes());
       case 'listar_escolaridades':
@@ -378,6 +396,18 @@ export class FerramentasService {
     // Os dados acompanham o grafico: o modelo precisa deles para comentar a
     // resposta, e sao os MESMOS numeros que foram plotados.
     return { grafico, dados: linhas };
+  }
+
+  /** Teto de opcoes: mais que isso vira menu e o administrador para de ler. */
+  private static readonly MAXIMO_DE_OPCOES = 4;
+
+  /** Limpa e limita as opcoes. Frase longa nao cabe no botao. */
+  private normalizarOpcoes(valor: unknown): string[] {
+    if (!Array.isArray(valor)) return [];
+    return valor
+      .map((opcao) => String(opcao).trim())
+      .filter((opcao) => opcao.length > 0 && opcao.length <= 80)
+      .slice(0, FerramentasService.MAXIMO_DE_OPCOES);
   }
 
   /**
