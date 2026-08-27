@@ -22,6 +22,17 @@ export class MvDesempenhoPorEscolaridade {
   @ViewColumn()
   goalId: number;
 
+  @ApiProperty({
+    example: 13,
+    description: 'Numero canonico do ODS (1-17). Use este, nao o goalId — ver a migration.',
+  })
+  @ViewColumn()
+  goalNumber: number;
+
+  @ApiProperty({ example: 'Acao Contra a Mudanca Global do Clima' })
+  @ViewColumn()
+  goalName: string;
+
   @ApiProperty({ example: 120 })
   @ViewColumn()
   totalRespostas: number;

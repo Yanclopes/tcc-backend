@@ -35,6 +35,12 @@ jobs:
       - name: Unit tests
         run: npm test -- --ci
 
+      # O Jest roda com isolatedModules (sem type-check por suite, 5x mais
+      # rapido). A verificacao de tipos passa a ser um passo proprio — sem ele,
+      # erro de tipo so apareceria no build.
+      - name: Typecheck
+        run: npm run typecheck
+
   # E2E: sobe postgres + redis reais como service containers, roda migrations
   # e seed, e executa a suite e2e (fluxo completo autenticado de partida).
   e2e-tests:
@@ -43,7 +49,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16-alpine
+        # Precisa da extensao 'vector' para a migration do modulo de chat.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ods
           POSTGRES_PASSWORD: ods_secret
