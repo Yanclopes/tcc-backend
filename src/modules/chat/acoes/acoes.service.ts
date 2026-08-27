@@ -56,10 +56,10 @@ export class AcoesService {
   async listarSugestoesPendentes(): Promise<
     Array<{
       id: number;
-      nome: string;
+      escolaSugerida: string;
       cidade: string;
       criadaEm: Date;
-      possivelDuplicata: { id: number; nome: string } | null;
+      possivelDuplicata: { id: number; escola: string } | null;
     }>
   > {
     const pendentes = await this.sugestaoRepo.find({
@@ -73,19 +73,25 @@ export class AcoesService {
         const duplicata = await this.possivelDuplicata(sugestao);
         return {
           id: sugestao.id,
-          nome: sugestao.name,
+          // Chaves explicitas, nunca 'nome': o guard de LGPD remove qualquer
+          // campo chamado 'nome'/'name' por nao ter como saber se e nome de
+          // pessoa. Ele fez isso aqui e o assistente perdeu o nome da escola,
+          // respondendo sem dizer qual era. Nome ambiguo em payload de
+          // ferramenta ja tinha nos custado a cidade rotulada como estado.
+          escolaSugerida: sugestao.name,
           cidade: sugestao.city?.name ?? '—',
           criadaEm: sugestao.createdAt,
-          possivelDuplicata: duplicata ? { id: duplicata.id, nome: duplicata.name } : null,
+          possivelDuplicata: duplicata ? { id: duplicata.id, escola: duplicata.name } : null,
         };
       }),
     );
   }
 
   /** Niveis de escolaridade, necessarios para aprovar uma sugestao. */
-  async listarEscolaridades(): Promise<Array<{ id: number; nome: string }>> {
+  async listarEscolaridades(): Promise<Array<{ id: number; escolaridade: string }>> {
     const niveis = await this.escolaridadeRepo.find({ order: { id: 'ASC' } });
-    return niveis.map((nivel) => ({ id: nivel.id, nome: nivel.name }));
+    // 'escolaridade', nao 'nome' — ver a nota em listarSugestoesPendentes.
+    return niveis.map((nivel) => ({ id: nivel.id, escolaridade: nivel.name }));
   }
 
   // ------------------------------------------------------------------

@@ -10,7 +10,7 @@ import { AcoesService } from './acoes.service';
 
 describe('AcoesService', () => {
   let service: AcoesService;
-  let sugestaoRepo: { findOne: jest.Mock };
+  let sugestaoRepo: { findOne: jest.Mock; find: jest.Mock };
   let escolaRepo: { findOne: jest.Mock; find: jest.Mock };
   let perguntaRepo: { findOne: jest.Mock; count: jest.Mock };
   let odsRepo: { findOne: jest.Mock };
@@ -33,7 +33,10 @@ describe('AcoesService', () => {
   };
 
   beforeEach(async () => {
-    sugestaoRepo = { findOne: jest.fn(() => Promise.resolve(sugestaoPendente)) };
+    sugestaoRepo = {
+      findOne: jest.fn(() => Promise.resolve(sugestaoPendente)),
+      find: jest.fn(() => Promise.resolve([sugestaoPendente])),
+    };
     escolaRepo = { findOne: jest.fn(), find: jest.fn(() => Promise.resolve([])) };
     perguntaRepo = {
       findOne: jest.fn(() => Promise.resolve(perguntaExistente)),
@@ -132,6 +135,24 @@ describe('AcoesService', () => {
       const acao = await service.vincularSugestaoEscola(1, 9);
 
       expect(acao.avisos.some((a) => a.nivel === 'atencao')).toBe(true);
+    });
+
+    it('nao usa chaves que o guard de LGPD remove', async () => {
+      // O guard apaga qualquer campo 'nome'/'name' por nao ter como saber se e
+      // nome de pessoa. Usar essas chaves aqui fez o assistente perder o nome
+      // da escola e responder sem dizer qual era.
+      const [sugestao] = await service.listarSugestoesPendentes();
+
+      expect(sugestao.escolaSugerida).toBe('EEB Frei Godofredo');
+      expect(sugestao).not.toHaveProperty('nome');
+      expect(sugestao).not.toHaveProperty('name');
+    });
+
+    it('lista escolaridades sem chave ambigua', async () => {
+      const niveis = await service.listarEscolaridades();
+
+      expect(niveis[0].escolaridade).toBe('Ensino Fundamental II');
+      expect(niveis[0]).not.toHaveProperty('nome');
     });
   });
 
