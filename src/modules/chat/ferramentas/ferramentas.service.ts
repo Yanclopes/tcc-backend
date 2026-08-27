@@ -174,6 +174,18 @@ export class FerramentasService {
         },
       ),
       ferramenta(
+        'listar_sugestoes_escola',
+        'Sugestoes de escola enviadas por alunos que AGUARDAM decisao, com a cidade e a ' +
+          'escola parecida ja existente quando houver. Use sempre que a pergunta for sobre ' +
+          'sugestoes pendentes, escolas esperando aprovacao ou alunos travados no cadastro. ' +
+          'Lista vazia significa que nao ha nenhuma pendente.',
+      ),
+      ferramenta(
+        'listar_escolaridades',
+        'Niveis de escolaridade com seus ids. Necessario para aprovar uma sugestao de escola, ' +
+          'que exige informar quais niveis a escola atende.',
+      ),
+      ferramenta(
         'propor_acao',
         'PROPOE uma acao administrativa para o administrador confirmar. Nao executa nada: ' +
           'devolve uma proposta que aparece na tela com botao de confirmar. Use quando o ' +
@@ -200,7 +212,9 @@ export class FerramentasService {
           escolaridadeIds: {
             type: 'array',
             items: { type: 'integer' },
-            description: 'Niveis atendidos pela escola, para aprovar_sugestao_escola.',
+            description:
+              'Ids dos niveis atendidos pela escola, para aprovar_sugestao_escola. CONSULTE ' +
+              'listar_escolaridades antes: nao adivinhe o id a partir do nome.',
           },
           motivo: {
             type: 'string',
@@ -293,6 +307,10 @@ export class FerramentasService {
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
       case 'gerar_grafico':
         return this.gerarGrafico(argumentos);
+      case 'listar_sugestoes_escola':
+        return this.sanitizar(await this.acoes.listarSugestoesPendentes());
+      case 'listar_escolaridades':
+        return this.sanitizar(await this.acoes.listarEscolaridades());
       case 'propor_acao':
         return { acao: await this.proporAcao(argumentos) };
       case 'cobertura_do_catalogo':

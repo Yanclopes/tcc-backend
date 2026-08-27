@@ -6,6 +6,7 @@ import { GameAnswer } from '../../game/entities/game-answer.entity';
 import { School } from '../../geo/entities/school.entity';
 import { SchoolSuggestion } from '../../schools/entities/school-suggestion.entity';
 import { Goal } from '../../goals/entities/goal.entity';
+import { EducationLevel } from '../../users/entities/education-level.entity';
 import { Question } from '../../questions/entities/question.entity';
 import { AcaoProposta, AvisoDaAcao } from '../chat.types';
 
@@ -34,7 +35,58 @@ export class AcoesService {
     private readonly odsRepo: Repository<Goal>,
     @InjectRepository(GameAnswer)
     private readonly respostaRepo: Repository<GameAnswer>,
+    @InjectRepository(EducationLevel)
+    private readonly escolaridadeRepo: Repository<EducationLevel>,
   ) {}
+
+  // ------------------------------------------------------------------
+  // Leituras que sustentam as propostas
+  // ------------------------------------------------------------------
+
+  /**
+   * Sugestoes de escola aguardando decisao, com a duplicata provavel ja
+   * apontada.
+   *
+   * Sem esta leitura o assistente nao tinha como responder "tem sugestao
+   * pendente?" — e, sem dado, afirmou que nao havia. Faltar ferramenta faz o
+   * modelo preencher o buraco; e o padrao que se repetiu neste modulo inteiro.
+   *
+   * NAO devolve quem sugeriu: o nome do aluno nao precisa sair da aplicacao.
+   */
+  async listarSugestoesPendentes(): Promise<
+    Array<{
+      id: number;
+      nome: string;
+      cidade: string;
+      criadaEm: Date;
+      possivelDuplicata: { id: number; nome: string } | null;
+    }>
+  > {
+    const pendentes = await this.sugestaoRepo.find({
+      where: { status: 'pending' },
+      relations: { city: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    return Promise.all(
+      pendentes.map(async (sugestao) => {
+        const duplicata = await this.possivelDuplicata(sugestao);
+        return {
+          id: sugestao.id,
+          nome: sugestao.name,
+          cidade: sugestao.city?.name ?? '—',
+          criadaEm: sugestao.createdAt,
+          possivelDuplicata: duplicata ? { id: duplicata.id, nome: duplicata.name } : null,
+        };
+      }),
+    );
+  }
+
+  /** Niveis de escolaridade, necessarios para aprovar uma sugestao. */
+  async listarEscolaridades(): Promise<Array<{ id: number; nome: string }>> {
+    const niveis = await this.escolaridadeRepo.find({ order: { id: 'ASC' } });
+    return niveis.map((nivel) => ({ id: nivel.id, nome: nivel.name }));
+  }
 
   // ------------------------------------------------------------------
   // Sugestoes de escola
@@ -83,6 +135,25 @@ export class AcoesService {
     const sugestao = await this.sugestaoOuErro(id);
     const avisos: AvisoDaAcao[] = [];
 
+    // Resolve os ids em NOMES antes de mostrar a proposta.
+    //
+    // Medido: pedindo "Ensino Medio" o modelo enviou o id 2, que e "Ensino
+    // Fundamental II" — chutou em vez de consultar. Exibindo so o numero, o
+    // administrador confirmaria sem perceber. Com o nome na tela, o erro fica
+    // visivel antes do clique, que e exatamente para isso que a confirmacao
+    // existe.
+    const niveis = niveisIds.length
+      ? await this.escolaridadeRepo.find({ where: niveisIds.map((idNivel) => ({ id: idNivel })) })
+      : [];
+    const encontrados = new Map(niveis.map((nivel) => [nivel.id, nivel.name]));
+    const inexistentes = niveisIds.filter((idNivel) => !encontrados.has(idNivel));
+    if (inexistentes.length) {
+      throw new Error(
+        `Nao existe escolaridade com id ${inexistentes.join(', ')}. ` +
+          'Consulte listar_escolaridades antes de propor.',
+      );
+    }
+
     const duplicata = await this.possivelDuplicata(sugestao);
     if (duplicata) {
       avisos.push({
@@ -106,7 +177,12 @@ export class AcoesService {
       detalhes: [
         { rotulo: 'Nome', valor: sugestao.name },
         { rotulo: 'Cidade', valor: sugestao.city?.name ?? '—' },
-        { rotulo: 'Escolaridades', valor: niveisIds.length ? niveisIds.join(', ') : '(nenhuma)' },
+        {
+          rotulo: 'Escolaridades',
+          valor: niveisIds.length
+            ? niveisIds.map((idNivel) => `${encontrados.get(idNivel)} (id ${idNivel})`).join(', ')
+            : '(nenhuma)',
+        },
       ],
       avisos,
       requisicao: {

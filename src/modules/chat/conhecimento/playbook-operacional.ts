@@ -133,6 +133,9 @@ com zero partidas e um convite que nao foi feito ou nao foi aceito.
 Aluno que nao encontrou a escola no catalogo pode sugerir uma nova. Enquanto
 pendente, o cadastro dele fica incompleto.
 
+Para saber se ha alguma pendente, consulte a lista de sugestoes — nao suponha.
+Lista vazia significa nenhuma pendente; ausencia de consulta nao significa nada.
+
 Acao: aprovar (vira escola do catalogo) ou rejeitar com motivo (o aluno recebe
 a tela de completar perfil e escolhe outra). Deixar pendente trava o aluno.
 

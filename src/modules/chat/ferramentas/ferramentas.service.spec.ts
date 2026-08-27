@@ -22,6 +22,8 @@ describe('FerramentasService', () => {
     definirPerguntaAtiva: jest.Mock;
     criarPergunta: jest.Mock;
     editarPergunta: jest.Mock;
+    listarSugestoesPendentes: jest.Mock;
+    listarEscolaridades: jest.Mock;
   };
   let analytics: {
     acertoPorOds: jest.Mock;
@@ -47,6 +49,8 @@ describe('FerramentasService', () => {
       definirPerguntaAtiva: jest.fn(proposta('definir_pergunta_ativa')),
       criarPergunta: jest.fn(proposta('criar_pergunta')),
       editarPergunta: jest.fn(proposta('editar_pergunta')),
+      listarSugestoesPendentes: jest.fn(() => Promise.resolve([])),
+      listarEscolaridades: jest.fn(() => Promise.resolve([])),
     };
     analytics = {
       acertoPorOds: jest.fn(() => Promise.resolve([])),
@@ -70,7 +74,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(11);
+      expect(nomes).toHaveLength(13);
     });
 
     it('toda ferramenta declarada tem descricao', () => {

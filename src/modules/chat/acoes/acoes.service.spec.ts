@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { GameAnswer } from '../../game/entities/game-answer.entity';
 import { School } from '../../geo/entities/school.entity';
 import { Goal } from '../../goals/entities/goal.entity';
+import { EducationLevel } from '../../users/entities/education-level.entity';
 import { Question } from '../../questions/entities/question.entity';
 import { SchoolSuggestion } from '../../schools/entities/school-suggestion.entity';
 import { AcoesService } from './acoes.service';
@@ -14,6 +15,7 @@ describe('AcoesService', () => {
   let perguntaRepo: { findOne: jest.Mock; count: jest.Mock };
   let odsRepo: { findOne: jest.Mock };
   let respostaRepo: { count: jest.Mock };
+  let escolaridadeRepo: { find: jest.Mock };
 
   const sugestaoPendente = {
     id: 1,
@@ -39,6 +41,14 @@ describe('AcoesService', () => {
     };
     odsRepo = { findOne: jest.fn(() => Promise.resolve({ id: 6, number: 6, name: 'Agua' })) };
     respostaRepo = { count: jest.fn(() => Promise.resolve(0)) };
+    escolaridadeRepo = {
+      find: jest.fn(() =>
+        Promise.resolve([
+          { id: 2, name: 'Ensino Fundamental II' },
+          { id: 3, name: 'Ensino Medio' },
+        ]),
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +58,7 @@ describe('AcoesService', () => {
         { provide: getRepositoryToken(Question), useValue: perguntaRepo },
         { provide: getRepositoryToken(Goal), useValue: odsRepo },
         { provide: getRepositoryToken(GameAnswer), useValue: respostaRepo },
+        { provide: getRepositoryToken(EducationLevel), useValue: escolaridadeRepo },
       ],
     }).compile();
 
@@ -75,6 +86,24 @@ describe('AcoesService', () => {
       const acao = await service.aprovarSugestaoEscola(1, [2]);
 
       expect(acao.avisos.some((a) => a.nivel === 'atencao' && /VINCULAR/.test(a.texto))).toBe(true);
+    });
+
+    it('mostra o NOME da escolaridade, nao so o id', async () => {
+      // Medido: pedindo "Ensino Medio" o modelo enviou o id 2, que e
+      // "Ensino Fundamental II". Com so o numero na tela, o administrador
+      // confirmaria sem perceber a troca.
+      const acao = await service.aprovarSugestaoEscola(1, [2]);
+
+      const linha = acao.detalhes.find((d) => d.rotulo === 'Escolaridades');
+      expect(linha?.valor).toContain('Ensino Fundamental II');
+    });
+
+    it('recusa escolaridade inexistente', async () => {
+      escolaridadeRepo.find.mockResolvedValue([]);
+
+      await expect(service.aprovarSugestaoEscola(1, [99])).rejects.toThrow(
+        /Nao existe escolaridade com id 99/,
+      );
     });
 
     it('alerta quando nenhuma escolaridade foi informada', async () => {

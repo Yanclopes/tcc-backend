@@ -7,6 +7,7 @@ import { GameAnswer } from '../game/entities/game-answer.entity';
 import { School } from '../geo/entities/school.entity';
 import { SchoolSuggestion } from '../schools/entities/school-suggestion.entity';
 import { Goal } from '../goals/entities/goal.entity';
+import { EducationLevel } from '../users/entities/education-level.entity';
 import { Question } from '../questions/entities/question.entity';
 import { AcoesService } from './acoes/acoes.service';
 import { ChatController } from './chat.controller';
@@ -43,6 +44,7 @@ import { RetrieverService } from './rag/retriever.service';
       SchoolSuggestion,
       School,
       GameAnswer,
+      EducationLevel,
     ]),
     DashboardModule,
     AnalyticsModule,
