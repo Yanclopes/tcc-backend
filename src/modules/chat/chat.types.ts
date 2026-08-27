@@ -49,6 +49,7 @@ export interface RespostaDoAssistente {
   passos: PassoDoAssistente[];
   trechosCitados: TrechoRecuperado[];
   graficos: EspecificacaoDeGrafico[];
+  acoes: AcaoProposta[];
   tokensPrompt: number;
   tokensSaida: number;
 }
@@ -127,4 +128,48 @@ export interface EspecificacaoDeGrafico {
   fonte: string;
   /** Ressalva exibida junto ao grafico (ex.: lista truncada, amostra pequena). */
   nota?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Acoes administrativas
+// ---------------------------------------------------------------------------
+
+/** O que a acao vai fazer. Ver .specs/06-chat-ia.md secao "Acoes". */
+export type TipoDeAcao =
+  | 'aprovar_sugestao_escola'
+  | 'vincular_sugestao_escola'
+  | 'rejeitar_sugestao_escola'
+  | 'definir_pergunta_ativa'
+  | 'criar_pergunta'
+  | 'editar_pergunta';
+
+/** Um aviso que o administrador precisa ler ANTES de confirmar. */
+export interface AvisoDaAcao {
+  /** 'atencao' pede leitura; 'informacao' e contexto util. */
+  nivel: 'atencao' | 'informacao';
+  texto: string;
+}
+
+/**
+ * Uma acao proposta pelo assistente — NAO executada.
+ *
+ * O modelo monta; o back-end valida contra o banco e preenche resumo, avisos e
+ * a requisicao exata; a interface confirma; o clique do administrador executa
+ * pelo endpoint de sempre, com guard e auditoria. O assistente nunca escreve.
+ */
+export interface AcaoProposta {
+  /** Identificador da proposta dentro da mensagem. */
+  id: string;
+  tipo: TipoDeAcao;
+  /** Uma frase dizendo o que vai acontecer, em portugues. */
+  resumo: string;
+  /** Detalhamento campo a campo, para revisao antes de confirmar. */
+  detalhes: Array<{ rotulo: string; valor: string }>;
+  avisos: AvisoDaAcao[];
+  /** A requisicao que a interface deve disparar quando o admin confirmar. */
+  requisicao: {
+    metodo: 'POST' | 'PATCH';
+    caminho: string;
+    corpo: Record<string, unknown>;
+  };
 }

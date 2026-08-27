@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AnalyticsService } from '../../analytics/analytics.service';
 import { DashboardService } from '../../dashboard/dashboard.service';
 import { RegionLevel } from '../../dashboard/dto/region-level.enum';
+import { AcoesService } from '../acoes/acoes.service';
 import { FerramentasService } from './ferramentas.service';
 
 describe('FerramentasService', () => {
@@ -13,6 +14,14 @@ describe('FerramentasService', () => {
     byQuestion: jest.Mock;
     coberturaPorOds: jest.Mock;
     coberturaGeografica: jest.Mock;
+  };
+  let acoes: {
+    aprovarSugestaoEscola: jest.Mock;
+    vincularSugestaoEscola: jest.Mock;
+    rejeitarSugestaoEscola: jest.Mock;
+    definirPerguntaAtiva: jest.Mock;
+    criarPergunta: jest.Mock;
+    editarPergunta: jest.Mock;
   };
   let analytics: {
     acertoPorOds: jest.Mock;
@@ -29,6 +38,16 @@ describe('FerramentasService', () => {
       coberturaPorOds: jest.fn(() => Promise.resolve([])),
       coberturaGeografica: jest.fn(() => Promise.resolve([])),
     };
+    const proposta = (tipo: string) => () =>
+      Promise.resolve({ id: 'x', tipo, resumo: '', detalhes: [], avisos: [], requisicao: {} });
+    acoes = {
+      aprovarSugestaoEscola: jest.fn(proposta('aprovar_sugestao_escola')),
+      vincularSugestaoEscola: jest.fn(proposta('vincular_sugestao_escola')),
+      rejeitarSugestaoEscola: jest.fn(proposta('rejeitar_sugestao_escola')),
+      definirPerguntaAtiva: jest.fn(proposta('definir_pergunta_ativa')),
+      criarPergunta: jest.fn(proposta('criar_pergunta')),
+      editarPergunta: jest.fn(proposta('editar_pergunta')),
+    };
     analytics = {
       acertoPorOds: jest.fn(() => Promise.resolve([])),
       desempenhoPorEscolaridade: jest.fn(() => Promise.resolve([])),
@@ -40,6 +59,7 @@ describe('FerramentasService', () => {
         FerramentasService,
         { provide: DashboardService, useValue: dashboard },
         { provide: AnalyticsService, useValue: analytics },
+        { provide: AcoesService, useValue: acoes },
       ],
     }).compile();
 
@@ -50,7 +70,7 @@ describe('FerramentasService', () => {
     it('declara todas as ferramentas com nome unico', () => {
       const nomes = service.declaracoes.map((d) => d.function.name);
       expect(new Set(nomes).size).toBe(nomes.length);
-      expect(nomes).toHaveLength(10);
+      expect(nomes).toHaveLength(11);
     });
 
     it('toda ferramenta declarada tem descricao', () => {
@@ -66,6 +86,7 @@ describe('FerramentasService', () => {
       // validacao, nao por falta de case, entao o teste passa o minimo valido.
       const argumentosMinimos: Record<string, Record<string, unknown>> = {
         gerar_grafico: { fonte: 'desempenho_por_ods' },
+        propor_acao: { tipo: 'definir_pergunta_ativa', perguntaId: 1, ativa: false },
       };
 
       for (const declaracao of service.declaracoes) {

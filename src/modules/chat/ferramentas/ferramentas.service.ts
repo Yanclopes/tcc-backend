@@ -4,7 +4,8 @@ import { AnalyticsService } from '../../analytics/analytics.service';
 import { DashboardService } from '../../dashboard/dashboard.service';
 import { DashboardFilterDto } from '../../dashboard/dto/dashboard-filter.dto';
 import { RegionLevel } from '../../dashboard/dto/region-level.enum';
-import { EspecificacaoDeGrafico } from '../chat.types';
+import { AcoesService } from '../acoes/acoes.service';
+import { AcaoProposta, EspecificacaoDeGrafico } from '../chat.types';
 import {
   FONTES_AGRUPAVEIS,
   FONTES_DE_MATRIZ,
@@ -89,6 +90,7 @@ export class FerramentasService {
   constructor(
     private readonly dashboard: DashboardService,
     private readonly analytics: AnalyticsService,
+    private readonly acoes: AcoesService,
   ) {}
 
   /** Declaracoes enviadas ao modelo. */
@@ -172,6 +174,59 @@ export class FerramentasService {
         },
       ),
       ferramenta(
+        'propor_acao',
+        'PROPOE uma acao administrativa para o administrador confirmar. Nao executa nada: ' +
+          'devolve uma proposta que aparece na tela com botao de confirmar. Use quando o ' +
+          'administrador pedir para aprovar/rejeitar sugestao de escola, ativar/desativar, ' +
+          'criar ou editar pergunta. Sempre explique em texto o que esta propondo e por que.',
+        {
+          tipo: {
+            type: 'string',
+            enum: [
+              'aprovar_sugestao_escola',
+              'vincular_sugestao_escola',
+              'rejeitar_sugestao_escola',
+              'definir_pergunta_ativa',
+              'criar_pergunta',
+              'editar_pergunta',
+            ],
+            description: 'Qual acao propor.',
+          },
+          sugestaoId: { type: 'integer', description: 'Id da sugestao de escola.' },
+          escolaId: {
+            type: 'integer',
+            description: 'Id da escola existente, para vincular_sugestao_escola.',
+          },
+          escolaridadeIds: {
+            type: 'array',
+            items: { type: 'integer' },
+            description: 'Niveis atendidos pela escola, para aprovar_sugestao_escola.',
+          },
+          motivo: {
+            type: 'string',
+            description: 'Motivo da rejeicao. O aluno le este texto, entao escreva com cuidado.',
+          },
+          perguntaId: {
+            type: 'integer',
+            description: 'Id da pergunta a ativar, desativar ou editar.',
+          },
+          ativa: { type: 'boolean', description: 'true ativa, false desativa.' },
+          enunciado: { type: 'string', description: 'Texto da pergunta.' },
+          odsNumero: { type: 'integer', description: 'Numero canonico do ODS (1 a 17).' },
+          alternativas: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Exatamente 4 alternativas distintas.',
+          },
+          indiceCorreto: {
+            type: 'integer',
+            description: 'Indice (0 a 3) da alternativa correta dentro de alternativas.',
+          },
+          dificuldade: { type: 'integer', description: 'Dificuldade de 1 a 5.' },
+          fonte: { type: 'string', description: 'Fonte bibliografica da pergunta.' },
+        },
+      ),
+      ferramenta(
         'cobertura_do_catalogo',
         'Os 17 ODS com quantas perguntas cada um tem CADASTRADAS, quantas ativas, quantas ' +
           'ja receberam resposta e o total de respostas — INCLUSIVE os ODS que nao tem ' +
@@ -238,6 +293,8 @@ export class FerramentasService {
         return this.sanitizar(await this.dashboard.byQuestion(filtro));
       case 'gerar_grafico':
         return this.gerarGrafico(argumentos);
+      case 'propor_acao':
+        return { acao: await this.proporAcao(argumentos) };
       case 'cobertura_do_catalogo':
         return this.sanitizar(await this.dashboard.coberturaPorOds());
       case 'cobertura_geografica':
@@ -303,6 +360,82 @@ export class FerramentasService {
     // Os dados acompanham o grafico: o modelo precisa deles para comentar a
     // resposta, e sao os MESMOS numeros que foram plotados.
     return { grafico, dados: linhas };
+  }
+
+  /**
+   * Monta a proposta. NAO executa — ver .specs/06-chat-ia.md.
+   *
+   * Cada erro de validacao volta como excecao, que o laco transforma em retorno
+   * de ferramenta: o modelo le a mensagem e corrige na proxima volta em vez de
+   * a requisicao inteira falhar.
+   */
+  private async proporAcao(argumentos: Record<string, unknown>): Promise<AcaoProposta> {
+    const inteiro = (valor: unknown, campo: string): number => {
+      const n = typeof valor === 'string' ? Number.parseInt(valor, 10) : valor;
+      if (typeof n !== 'number' || !Number.isFinite(n)) {
+        throw new Error(`'${campo}' e obrigatorio e precisa ser um numero.`);
+      }
+      return n;
+    };
+    const listaDeTextos = (valor: unknown, campo: string): string[] => {
+      if (!Array.isArray(valor)) throw new Error(`'${campo}' precisa ser uma lista de textos.`);
+      return valor.map((item) => String(item));
+    };
+
+    switch (argumentos.tipo) {
+      case 'aprovar_sugestao_escola':
+        return this.acoes.aprovarSugestaoEscola(
+          inteiro(argumentos.sugestaoId, 'sugestaoId'),
+          Array.isArray(argumentos.escolaridadeIds)
+            ? argumentos.escolaridadeIds.map((id) => inteiro(id, 'escolaridadeIds'))
+            : [],
+        );
+      case 'vincular_sugestao_escola':
+        return this.acoes.vincularSugestaoEscola(
+          inteiro(argumentos.sugestaoId, 'sugestaoId'),
+          inteiro(argumentos.escolaId, 'escolaId'),
+        );
+      case 'rejeitar_sugestao_escola':
+        return this.acoes.rejeitarSugestaoEscola(
+          inteiro(argumentos.sugestaoId, 'sugestaoId'),
+          typeof argumentos.motivo === 'string' ? argumentos.motivo : '',
+        );
+      case 'definir_pergunta_ativa':
+        return this.acoes.definirPerguntaAtiva(
+          inteiro(argumentos.perguntaId, 'perguntaId'),
+          argumentos.ativa === true,
+        );
+      case 'criar_pergunta':
+        return this.acoes.criarPergunta({
+          texto: typeof argumentos.enunciado === 'string' ? argumentos.enunciado : '',
+          odsNumero: inteiro(argumentos.odsNumero, 'odsNumero'),
+          alternativas: listaDeTextos(argumentos.alternativas, 'alternativas'),
+          indiceCorreto: inteiro(argumentos.indiceCorreto, 'indiceCorreto'),
+          dificuldade:
+            argumentos.dificuldade !== undefined
+              ? inteiro(argumentos.dificuldade, 'dificuldade')
+              : undefined,
+          fonte: typeof argumentos.fonte === 'string' ? argumentos.fonte : undefined,
+        });
+      case 'editar_pergunta':
+        return this.acoes.editarPergunta({
+          id: inteiro(argumentos.perguntaId, 'perguntaId'),
+          texto: typeof argumentos.enunciado === 'string' ? argumentos.enunciado : undefined,
+          alternativas: Array.isArray(argumentos.alternativas)
+            ? listaDeTextos(argumentos.alternativas, 'alternativas')
+            : undefined,
+          indiceCorreto:
+            argumentos.indiceCorreto !== undefined
+              ? inteiro(argumentos.indiceCorreto, 'indiceCorreto')
+              : undefined,
+          dificuldade:
+            argumentos.dificuldade !== undefined
+              ? inteiro(argumentos.dificuldade, 'dificuldade')
+              : undefined,
+        });
+      default:
+        throw new Error(`Tipo de acao desconhecido: '${String(argumentos.tipo)}'.`);
+    }
   }
 
   /** Converte os argumentos do modelo no DTO de filtro, ignorando o que nao serve. */

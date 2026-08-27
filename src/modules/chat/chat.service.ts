@@ -7,6 +7,7 @@ import type {
 import { Repository } from 'typeorm';
 import { AppUser } from '../users/entities/app-user.entity';
 import {
+  AcaoProposta,
   EspecificacaoDeGrafico,
   PassoDoAssistente,
   RespostaDoAssistente,
@@ -85,6 +86,14 @@ Como responder:
   markdown de imagem, link, data:image, base64 nem desenho em ASCII: nao existe
   imagem para embutir, e o resultado seria uma imagem quebrada na tela. Escreva
   como se o leitor ja estivesse vendo o grafico.
+- Para EXECUTAR algo (aprovar/rejeitar sugestao, ativar/desativar, criar ou
+  editar pergunta), use propor_acao. Ela nao executa: monta uma proposta que o
+  administrador confirma na tela. Explique em texto o que voce propos e por que
+  — nunca diga que a acao foi feita, aprovada ou salva: ate o clique dele, nada
+  aconteceu.
+- Ao propor edicao de pergunta que ja tem respostas, diga isso na sua resposta,
+  nao so no aviso da proposta. Mudar o enunciado faz os dados ja coletados se
+  referirem a um texto que nao existe mais.
 - Termine numa ACAO POSSIVEL sempre que houver uma. Diga o que fazer e em qual
   tela — por exemplo, revisar o enunciado em /admin/perguntas, ou aprovar a
   escola em /admin/escolas.
@@ -198,6 +207,7 @@ export class ChatService {
         conteudo: resposta.conteudo,
         passos: resposta.passos,
         graficos: resposta.graficos.length ? resposta.graficos : null,
+        acoes: resposta.acoes.length ? resposta.acoes : null,
         tokensPrompt: resposta.tokensPrompt,
         tokensSaida: resposta.tokensSaida,
       }),
@@ -223,6 +233,7 @@ export class ChatService {
   ): Promise<RespostaDoAssistente> {
     const passos: PassoDoAssistente[] = [];
     const graficos: EspecificacaoDeGrafico[] = [];
+    const acoes: AcaoProposta[] = [];
 
     const trechos = await this.retriever.recuperar(pergunta);
     passos.push({
@@ -272,6 +283,7 @@ export class ChatService {
           passos,
           trechosCitados: trechos,
           graficos,
+          acoes,
           tokensPrompt,
           tokensSaida,
         };
@@ -279,7 +291,7 @@ export class ChatService {
 
       mensagens.push(escolha);
       for (const chamada of chamadas) {
-        mensagens.push(await this.executarChamada(chamada, passos, graficos));
+        mensagens.push(await this.executarChamada(chamada, passos, graficos, acoes));
       }
     }
 
@@ -292,6 +304,7 @@ export class ChatService {
       passos,
       trechosCitados: trechos,
       graficos,
+      acoes,
       tokensPrompt,
       tokensSaida,
     };
@@ -302,6 +315,7 @@ export class ChatService {
     chamada: ChatCompletionMessageToolCall,
     passos: PassoDoAssistente[],
     graficos: EspecificacaoDeGrafico[],
+    acoes: AcaoProposta[],
   ): Promise<ChatCompletionMessageParam> {
     // A tipagem do SDK cobre outros tipos de tool alem de function; so tratamos
     // function, que e o unico que declaramos.
@@ -345,6 +359,13 @@ export class ChatService {
       const comGrafico = retorno as { grafico?: EspecificacaoDeGrafico | null } | null;
       if (comGrafico && typeof comGrafico === 'object' && comGrafico.grafico) {
         graficos.push(comGrafico.grafico);
+      }
+
+      // Acao PROPOSTA — anexada a mensagem para a interface pedir confirmacao.
+      // Nada foi executado aqui.
+      const comAcao = retorno as { acao?: AcaoProposta } | null;
+      if (comAcao && typeof comAcao === 'object' && comAcao.acao) {
+        acoes.push(comAcao.acao);
       }
 
       const serializado = JSON.stringify(retorno);

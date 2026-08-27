@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { EspecificacaoDeGrafico, PassoDoAssistente, TrechoRecuperado } from '../chat.types';
+import {
+  AcaoProposta,
+  EspecificacaoDeGrafico,
+  PassoDoAssistente,
+  TrechoRecuperado,
+} from '../chat.types';
 
 export class CriarConversaDto {
   @ApiPropertyOptional({
@@ -54,6 +59,11 @@ export class MensagemDto {
     description: 'Graficos montados a partir de consultas reais. Os numeros nunca vem do modelo.',
   })
   graficos?: EspecificacaoDeGrafico[] | null;
+
+  @ApiPropertyOptional({
+    description: 'Acoes propostas, aguardando confirmacao do administrador. Nada foi executado.',
+  })
+  acoes?: AcaoProposta[] | null;
 
   @ApiProperty()
   criadaEm: Date;

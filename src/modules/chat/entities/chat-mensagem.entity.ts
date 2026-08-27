@@ -7,7 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { EspecificacaoDeGrafico, PassoDoAssistente } from '../chat.types';
+import { AcaoProposta, EspecificacaoDeGrafico, PassoDoAssistente } from '../chat.types';
 import { ChatConversa } from './chat-conversa.entity';
 
 export const PAPEL_USUARIO = 'usuario';
@@ -49,6 +49,15 @@ export class ChatMensagem {
   })
   @Column({ type: 'jsonb', nullable: true })
   graficos?: EspecificacaoDeGrafico[] | null;
+
+  @ApiProperty({
+    description:
+      'Acoes administrativas PROPOSTAS — nunca executadas pelo assistente. A execucao depende ' +
+      'do clique do administrador. Ver .specs/06-chat-ia.md secao "Acoes administrativas".',
+    nullable: true,
+  })
+  @Column({ type: 'jsonb', nullable: true })
+  acoes?: AcaoProposta[] | null;
 
   @ApiProperty({ example: 1820 })
   @Column({ type: 'int', name: 'tokens_prompt', default: 0 })

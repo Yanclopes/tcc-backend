@@ -3,8 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { AuditModule } from '../audit/audit.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { GameAnswer } from '../game/entities/game-answer.entity';
+import { School } from '../geo/entities/school.entity';
+import { SchoolSuggestion } from '../schools/entities/school-suggestion.entity';
 import { Goal } from '../goals/entities/goal.entity';
 import { Question } from '../questions/entities/question.entity';
+import { AcoesService } from './acoes/acoes.service';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatConversa } from './entities/chat-conversa.entity';
@@ -34,13 +38,25 @@ import { RetrieverService } from './rag/retriever.service';
       ChatMensagem,
       Goal,
       Question,
+      // Usadas pelo AcoesService para validar a proposta contra o banco antes
+      // de o administrador confirmar.
+      SchoolSuggestion,
+      School,
+      GameAnswer,
     ]),
     DashboardModule,
     AnalyticsModule,
     AuditModule,
   ],
   controllers: [ChatController],
-  providers: [ChatService, OpenAiService, RetrieverService, IngestaoService, FerramentasService],
+  providers: [
+    ChatService,
+    OpenAiService,
+    RetrieverService,
+    IngestaoService,
+    FerramentasService,
+    AcoesService,
+  ],
   exports: [IngestaoService],
 })
 export class ChatModule {}
