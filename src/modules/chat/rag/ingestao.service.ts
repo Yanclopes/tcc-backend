@@ -23,7 +23,7 @@ export interface ResultadoDaIndexacao {
 }
 
 /**
- * Monta o corpus e o indexa. Ver .specs/06-chat-ia.md.
+ * Monta o corpus e o indexa. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Idempotente por hash: documento cujo texto nao mudou nao e reindexado, o que
  * significa nao gastar embedding a toa. Rodar duas vezes seguidas custa zero na

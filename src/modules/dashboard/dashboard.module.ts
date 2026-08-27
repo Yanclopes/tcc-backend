@@ -9,7 +9,7 @@ import { DashboardService } from './dashboard.service';
   controllers: [DashboardController],
   providers: [DashboardService],
   // Exportado para o modulo de chat, que reaproveita os agregados como
-  // ferramentas do assistente (ver .specs/06-chat-ia.md).
+  // ferramentas do assistente (ver tcc-docs/specs/06-chat-ia.md).
   exports: [DashboardService],
 })
 export class DashboardModule {}

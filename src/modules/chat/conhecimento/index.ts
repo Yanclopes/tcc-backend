@@ -12,7 +12,7 @@ import { regrasDoJogo } from './regras-do-jogo';
  * Mora em TypeScript (e nao em markdown solto) porque o Dockerfile e
  * multi-stage e o estagio final so copia `dist/` — markdown nao chegaria ao
  * servidor. Compilado, este modulo viaja junto com o resto da aplicacao, do
- * mesmo jeito que o seed. Ver .specs/06-chat-ia.md.
+ * mesmo jeito que o seed. Ver tcc-docs/specs/06-chat-ia.md.
  */
 export const BASE_CURADA: DocumentoDeConhecimento[] = [
   metricas,

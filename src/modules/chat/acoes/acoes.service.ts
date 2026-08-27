@@ -11,7 +11,7 @@ import { Question } from '../../questions/entities/question.entity';
 import { AcaoProposta, AvisoDaAcao } from '../chat.types';
 
 /**
- * Monta acoes administrativas PROPOSTAS. Ver .specs/06-chat-ia.md.
+ * Monta acoes administrativas PROPOSTAS. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Este servico nao escreve nada. Ele valida a proposta contra o banco, monta o
  * resumo e os avisos, e devolve a requisicao exata que a interface disparara

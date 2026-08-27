@@ -5,7 +5,7 @@ import { ChatTrecho } from './chat-trecho.entity';
 /**
  * Um documento da base de conhecimento do assistente.
  *
- * Vem de duas origens (ver .specs/06-chat-ia.md):
+ * Vem de duas origens (ver tcc-docs/specs/06-chat-ia.md):
  *   - 'curado:*' — texto escrito para o assistente, em conhecimento/*.ts
  *   - 'banco:*'  — derivado do proprio banco (ODS, perguntas, catalogos)
  */

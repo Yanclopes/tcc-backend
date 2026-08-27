@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Chat com IA — assistente de analise com RAG. Ver .specs/06-chat-ia.md.
+ * Chat com IA — assistente de analise com RAG. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Cria a extensao pgvector e as quatro tabelas do modulo:
  *   - chat_documento / chat_trecho  -> base de conhecimento indexada

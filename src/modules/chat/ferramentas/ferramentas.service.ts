@@ -15,7 +15,7 @@ import {
 } from '../graficos/graficos';
 
 /**
- * As ferramentas que o assistente pode acionar. Ver .specs/06-chat-ia.md.
+ * As ferramentas que o assistente pode acionar. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Por que existem: embedding e estatico e congela na data da indexacao. Numero
  * precisa ser do momento da pergunta, senao o assistente responde taxa de
@@ -432,7 +432,7 @@ export class FerramentasService {
   }
 
   /**
-   * Monta a proposta. NAO executa — ver .specs/06-chat-ia.md.
+   * Monta a proposta. NAO executa — ver tcc-docs/specs/06-chat-ia.md.
    *
    * Cada erro de validacao volta como excecao, que o laco transforma em retorno
    * de ferramenta: o modelo le a mensagem e corrige na proxima volta em vez de

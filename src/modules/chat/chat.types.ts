@@ -1,5 +1,5 @@
 /**
- * Tipos compartilhados do modulo de chat. Ver .specs/06-chat-ia.md.
+ * Tipos compartilhados do modulo de chat. Ver tcc-docs/specs/06-chat-ia.md.
  */
 
 /** Um documento da base curada, escrito em conhecimento/*.ts. */
@@ -136,7 +136,7 @@ export interface EspecificacaoDeGrafico {
 // Acoes administrativas
 // ---------------------------------------------------------------------------
 
-/** O que a acao vai fazer. Ver .specs/06-chat-ia.md secao "Acoes". */
+/** O que a acao vai fazer. Ver tcc-docs/specs/06-chat-ia.md secao "Acoes". */
 export type TipoDeAcao =
   | 'aprovar_sugestao_escola'
   | 'vincular_sugestao_escola'

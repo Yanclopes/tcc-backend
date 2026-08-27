@@ -404,7 +404,7 @@ export function montarGrafico(params: {
   const titulo = params.titulo?.trim() || `Comparativo — ${metrica.sufixoDoTitulo}`;
 
   // Uma linha so nao vira barra: grafico de uma barra e ruido, o numero e o
-  // grafico. Ver .specs/06-chat-ia.md secao "Graficos".
+  // grafico. Ver tcc-docs/specs/06-chat-ia.md secao "Graficos".
   if (itens.length === 1) {
     return {
       tipo: 'indicador',

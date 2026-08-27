@@ -2,7 +2,7 @@ import { DocumentoDeConhecimento } from '../chat.types';
 
 /**
  * Definicao das metricas do levantamento e, principalmente, como NAO
- * interpreta-las errado. Escrito para o assistente — ver .specs/06-chat-ia.md.
+ * interpreta-las errado. Escrito para o assistente — ver tcc-docs/specs/06-chat-ia.md.
  */
 export const metricas: DocumentoDeConhecimento = {
   fonte: 'curado:metricas',

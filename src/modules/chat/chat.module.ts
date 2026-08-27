@@ -22,7 +22,7 @@ import { OpenAiService } from './rag/openai.service';
 import { RetrieverService } from './rag/retriever.service';
 
 /**
- * Assistente de analise com RAG sobre pgvector. Ver .specs/06-chat-ia.md.
+ * Assistente de analise com RAG sobre pgvector. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Goal e Question entram no forFeature porque a ingestao deriva parte do corpus
  * do proprio banco (Fonte B) — e o que faz a base crescer com o catalogo.

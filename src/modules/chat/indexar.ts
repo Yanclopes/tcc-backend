@@ -11,7 +11,7 @@ import { IngestaoService } from './rag/ingestao.service';
  *   npm run chat:indexar:prod   (servidor, sobre o dist compilado)
  *
  * Roda no deploy logo depois do seed. Idempotente por hash: rodar duas vezes
- * seguidas nao gasta embedding na segunda. Ver .specs/06-chat-ia.md.
+ * seguidas nao gasta embedding na segunda. Ver tcc-docs/specs/06-chat-ia.md.
  *
  * Usa createApplicationContext em vez de subir o servidor HTTP: precisamos da
  * injecao de dependencia (ConfigService, repositorios), nao das rotas.

@@ -4,7 +4,7 @@ import { DocumentoDeConhecimento } from '../chat.types';
  * As regras do jogo que DISTORCEM a leitura dos dados. Nao e a spec do jogo —
  * e o recorte que um analista precisa saber para nao tirar conclusao errada.
  *
- * MANUTENCAO: se .specs/01-dominio.md mudar, este arquivo precisa acompanhar.
+ * MANUTENCAO: se tcc-docs/specs/01-dominio.md mudar, este arquivo precisa acompanhar.
  * Divergencia aqui faz o assistente afirmar coisa errada com confianca.
  */
 export const regrasDoJogo: DocumentoDeConhecimento = {

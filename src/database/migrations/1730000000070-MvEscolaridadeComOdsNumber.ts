@@ -5,7 +5,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * A view expunha apenas `goal_id`. Hoje id e number coincidem, mas a convencao
  * do projeto e que toda regra de negocio use `goal.number` justamente porque o
- * id e autoincrement e muda em um reseed (ver .specs/db-schema-descricao.md).
+ * id e autoincrement e muda em um reseed (ver tcc-docs/specs/db-schema-descricao.md).
  * Qualquer consumidor que rotulasse "ODS {goal_id}" quebraria em silencio.
  *
  * Motivada pelo heatmap escolaridade x ODS do assistente, que precisa rotular

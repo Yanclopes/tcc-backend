@@ -150,7 +150,7 @@ recusa por falta de dado —, devolva uma lista VAZIA.
 
 /**
  * Orquestra uma pergunta: recupera contexto, monta o prompt, roda o laco de
- * ferramentas e persiste. Ver .specs/06-chat-ia.md.
+ * ferramentas e persiste. Ver tcc-docs/specs/06-chat-ia.md.
  */
 @Injectable()
 export class ChatService {

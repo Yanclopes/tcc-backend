@@ -44,7 +44,7 @@ export class ChatMensagem {
   @ApiProperty({
     description:
       'Graficos montados a partir de consultas reais. Os numeros aqui NUNCA vem do modelo ' +
-      '— ver .specs/06-chat-ia.md secao "Graficos".',
+      '— ver tcc-docs/specs/06-chat-ia.md secao "Graficos".',
     nullable: true,
   })
   @Column({ type: 'jsonb', nullable: true })
@@ -53,7 +53,7 @@ export class ChatMensagem {
   @ApiProperty({
     description:
       'Acoes administrativas PROPOSTAS — nunca executadas pelo assistente. A execucao depende ' +
-      'do clique do administrador. Ver .specs/06-chat-ia.md secao "Acoes administrativas".',
+      'do clique do administrador. Ver tcc-docs/specs/06-chat-ia.md secao "Acoes administrativas".',
     nullable: true,
   })
   @Column({ type: 'jsonb', nullable: true })

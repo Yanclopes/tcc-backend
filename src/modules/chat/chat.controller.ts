@@ -30,7 +30,7 @@ import {
 import { RetrieverService } from './rag/retriever.service';
 
 /**
- * Assistente de analise com RAG. Exclusivo de admin — ver .specs/06-chat-ia.md.
+ * Assistente de analise com RAG. Exclusivo de admin — ver tcc-docs/specs/06-chat-ia.md.
  *
  * O limite de taxa e proprio e bem mais baixo que o global de 120/min: cada
  * mensagem dispara embedding + uma ou mais chamadas de modelo, e isso custa.
