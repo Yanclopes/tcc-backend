@@ -306,6 +306,27 @@ export class FerramentasService {
     ];
   }
 
+  /**
+   * Resumo do que o assistente consegue fazer, uma linha por ferramenta.
+   *
+   * Existe para a chamada que gera as respostas rapidas: ela recebia so a
+   * pergunta e a resposta, sem saber o que a plataforma sabe fazer, e por isso
+   * oferecia botoes como "Solicitar relatorio de duplicatas" — que ao serem
+   * clicados davam em nada. Derivado das proprias declaracoes, entao nao
+   * desatualiza quando uma ferramenta e criada ou removida.
+   */
+  get resumoDasCapacidades(): string {
+    return this.declaracoes
+      .filter((declaracao) => declaracao.function.name !== 'oferecer_opcoes')
+      .map((declaracao) => {
+        const descricao = declaracao.function.description ?? '';
+        // Primeira frase basta: e um indice do que existe, nao a documentacao.
+        const primeiraFrase = descricao.split(/(?<=\.)\s/)[0];
+        return `- ${declaracao.function.name}: ${primeiraFrase}`;
+      })
+      .join('\n');
+  }
+
   /** Executa uma ferramenta pelo nome, com os argumentos que o modelo enviou. */
   async executar(nome: string, argumentos: Record<string, unknown>): Promise<unknown> {
     const filtro = this.montarFiltro(argumentos);

@@ -161,6 +161,10 @@ describe('AcoesService', () => {
       expect(sugestao.escolaSugerida).toBe('EEB Frei Godofredo');
       expect(sugestao).not.toHaveProperty('nome');
       expect(sugestao).not.toHaveProperty('name');
+      // 'id' sozinho e ambiguo num payload que traz sugestao e duplicata: o
+      // assistente citou o id da duplicata achando que era o da sugestao.
+      expect(sugestao.sugestaoId).toBe(1);
+      expect(sugestao).not.toHaveProperty('id');
     });
 
     it('lista escolaridades sem chave ambigua', async () => {

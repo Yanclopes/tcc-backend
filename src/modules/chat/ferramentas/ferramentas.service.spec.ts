@@ -100,6 +100,30 @@ describe('FerramentasService', () => {
     });
   });
 
+  describe('resumoDasCapacidades', () => {
+    it('lista o que existe, uma linha por ferramenta', () => {
+      // Alimenta a geracao de respostas rapidas: sem esta lista, ela oferecia
+      // botoes como "Solicitar relatorio de duplicatas", que davam em nada.
+      const resumo = service.resumoDasCapacidades;
+
+      expect(resumo).toContain('- desempenho_por_ods:');
+      expect(resumo).toContain('- propor_acao:');
+      expect(resumo.split('\n')).toHaveLength(service.declaracoes.length - 1);
+    });
+
+    it('nao inclui a propria ferramenta de opcoes', () => {
+      expect(service.resumoDasCapacidades).not.toContain('oferecer_opcoes');
+    });
+
+    it('acompanha automaticamente as ferramentas declaradas', () => {
+      // Derivado das declaracoes: nao desatualiza quando uma e criada.
+      for (const declaracao of service.declaracoes) {
+        if (declaracao.function.name === 'oferecer_opcoes') continue;
+        expect(service.resumoDasCapacidades).toContain(declaracao.function.name);
+      }
+    });
+  });
+
   describe('executar', () => {
     it('repassa os filtros recebidos do modelo', async () => {
       await service.executar('desempenho_por_ods', { goalNumber: 6, cityId: 1 });

@@ -139,9 +139,13 @@ Medio", "Vincular a sugestao 3 a escola 10", "Desativar a pergunta 18",
 "Ver desempenho por escola". Evite generico ("Saber mais", "Continuar") e evite
 repetir o que a resposta ja entregou.
 
+SO OFERECA O QUE A PLATAFORMA SABE FAZER. A lista de capacidades vem junto: se
+o proximo passo que voce pensou nao corresponde a nenhuma delas, nao ofereca.
+Botao que ao ser clicado responde "nao existe ferramenta para isso" e pior que
+botao nenhum — promete algo que nao acontece.
+
 Se a resposta esta completa e nao ha proximo passo obvio — ou se ela foi uma
-recusa por falta de dado —, devolva uma lista VAZIA. Botao inutil e pior que
-nenhum botao.
+recusa por falta de dado —, devolva uma lista VAZIA.
 `.trim();
 
 /**
@@ -275,6 +279,9 @@ export class ChatService {
     const passos: PassoDoAssistente[] = [];
     const graficos: EspecificacaoDeGrafico[] = [];
     const acoes: AcaoProposta[] = [];
+    // Retornos crus das consultas, para a geracao de respostas rapidas. O
+    // texto da resposta nem sempre cita os ids, e o botao precisa deles.
+    const retornos: string[] = [];
 
     const trechos = await this.retriever.recuperar(pergunta);
     passos.push({
@@ -325,7 +332,7 @@ export class ChatService {
           trechosCitados: trechos,
           graficos,
           acoes,
-          sugestoes: await this.sugerirOpcoes(pergunta, escolha.content ?? ''),
+          sugestoes: await this.sugerirOpcoes(pergunta, escolha.content ?? '', retornos),
           tokensPrompt,
           tokensSaida,
         };
@@ -333,7 +340,7 @@ export class ChatService {
 
       mensagens.push(escolha);
       for (const chamada of chamadas) {
-        mensagens.push(await this.executarChamada(chamada, passos, graficos, acoes));
+        mensagens.push(await this.executarChamada(chamada, passos, graficos, acoes, retornos));
       }
     }
 
@@ -359,7 +366,11 @@ export class ChatService {
    * Nunca derruba a resposta: se falhar, a mensagem vai sem botoes. Eles sao
    * conveniencia, e ficar sem eles e melhor que perder a resposta inteira.
    */
-  private async sugerirOpcoes(pergunta: string, resposta: string): Promise<string[]> {
+  private async sugerirOpcoes(
+    pergunta: string,
+    resposta: string,
+    retornos: string[],
+  ): Promise<string[]> {
     if (!resposta.trim()) return [];
 
     try {
@@ -367,6 +378,20 @@ export class ChatService {
         model: this.openai.modeloChat,
         messages: [
           { role: 'system', content: INSTRUCAO_DE_OPCOES },
+          {
+            role: 'system',
+            content: `O assistente consegue fazer APENAS isto:\n${this.ferramentas.resumoDasCapacidades}`,
+          },
+          ...(retornos.length
+            ? [
+                {
+                  role: 'system' as const,
+                  content:
+                    'Dados consultados para produzir a resposta. Tire DAQUI os identificadores ' +
+                    `que os botoes precisam carregar:\n${retornos.join('\n')}`,
+                },
+              ]
+            : []),
           { role: 'user', content: `Pergunta: ${pergunta}\n\nResposta dada:\n${resposta}` },
         ],
         tools: this.ferramentas.declaracoes.filter((d) => d.function.name === 'oferecer_opcoes'),
@@ -396,6 +421,7 @@ export class ChatService {
     passos: PassoDoAssistente[],
     graficos: EspecificacaoDeGrafico[],
     acoes: AcaoProposta[],
+    retornos: string[],
   ): Promise<ChatCompletionMessageParam> {
     // A tipagem do SDK cobre outros tipos de tool alem de function; so tratamos
     // function, que e o unico que declaramos.
@@ -449,6 +475,8 @@ export class ChatService {
       }
 
       const serializado = JSON.stringify(retorno);
+      // Truncado: e um indice de identificadores, nao o payload inteiro.
+      retornos.push(`${nome}: ${serializado.slice(0, 700)}`);
       passos.push({
         tipo: 'ferramenta',
         nome,

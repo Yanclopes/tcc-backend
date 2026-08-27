@@ -55,11 +55,11 @@ export class AcoesService {
    */
   async listarSugestoesPendentes(): Promise<
     Array<{
-      id: number;
+      sugestaoId: number;
       escolaSugerida: string;
       cidade: string;
       criadaEm: Date;
-      possivelDuplicata: { id: number; escola: string } | null;
+      possivelDuplicata: { escolaId: number; escola: string } | null;
     }>
   > {
     const pendentes = await this.sugestaoRepo.find({
@@ -72,7 +72,10 @@ export class AcoesService {
       pendentes.map(async (sugestao) => {
         const duplicata = await this.possivelDuplicata(sugestao);
         return {
-          id: sugestao.id,
+          // 'sugestaoId', nao 'id': num payload com escola e duplicata juntas,
+          // um campo chamado so 'id' nao diz de quem e — e o assistente citou o
+          // id da duplicata achando que era o da sugestao.
+          sugestaoId: sugestao.id,
           // Chaves explicitas, nunca 'nome': o guard de LGPD remove qualquer
           // campo chamado 'nome'/'name' por nao ter como saber se e nome de
           // pessoa. Ele fez isso aqui e o assistente perdeu o nome da escola,
@@ -81,7 +84,7 @@ export class AcoesService {
           escolaSugerida: sugestao.name,
           cidade: sugestao.city?.name ?? '—',
           criadaEm: sugestao.createdAt,
-          possivelDuplicata: duplicata ? { id: duplicata.id, escola: duplicata.name } : null,
+          possivelDuplicata: duplicata ? { escolaId: duplicata.id, escola: duplicata.name } : null,
         };
       }),
     );
