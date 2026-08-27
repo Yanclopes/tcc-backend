@@ -103,9 +103,30 @@ export class AcoesService {
       relations: { city: true },
     });
     if (!sugestao) throw new Error(`Sugestao ${id} nao existe.`);
+
     if (sugestao.status !== 'pending') {
-      throw new Error(`Sugestao ${id} ja foi ${sugestao.status}; nao ha o que decidir.`);
+      // Diz quais AINDA estao pendentes: sem isso o assistente reporta o erro
+      // e para, quando quase sempre ele so pegou o id errado.
+      const pendentes = await this.sugestaoRepo.find({
+        where: { status: 'pending' },
+        relations: { city: true },
+      });
+      const traducao: Record<string, string> = {
+        approved: 'aprovada',
+        rejected: 'rejeitada',
+        linked: 'vinculada',
+      };
+      const situacao = traducao[sugestao.status] ?? sugestao.status;
+      const alternativas = pendentes.length
+        ? `Pendentes hoje: ${pendentes.map((p) => `${p.id} (${p.name})`).join(', ')}.`
+        : 'Nao ha nenhuma sugestao pendente no momento.';
+
+      throw new Error(
+        `A sugestao ${id} ("${sugestao.name}") ja foi ${situacao} — nao ha o que decidir. ` +
+          alternativas,
+      );
     }
+
     return sugestao;
   }
 

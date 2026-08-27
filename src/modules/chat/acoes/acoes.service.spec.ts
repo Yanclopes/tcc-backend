@@ -115,10 +115,25 @@ describe('AcoesService', () => {
       expect(acao.avisos.some((a) => /escolaridade/i.test(a.texto))).toBe(true);
     });
 
-    it('recusa decidir sugestao que ja foi resolvida', async () => {
-      sugestaoRepo.findOne.mockResolvedValue({ ...sugestaoPendente, status: 'approved' });
+    it('recusa decidir sugestao que ja foi resolvida, e diz quais estao pendentes', async () => {
+      // Medido: o botao de resposta rapida dizia so "Aprovar a sugestao", sem
+      // id, e o modelo agiu sobre uma ja rejeitada. Listar as pendentes no erro
+      // permite que ele corrija em vez de so reportar a falha.
+      sugestaoRepo.findOne.mockResolvedValue({ ...sugestaoPendente, status: 'rejected' });
+      sugestaoRepo.find.mockResolvedValue([{ id: 3, name: 'EEB Frei Godofredo [TESTE]' }]);
 
-      await expect(service.aprovarSugestaoEscola(1, [2])).rejects.toThrow(/ja foi approved/i);
+      await expect(service.aprovarSugestaoEscola(1, [2])).rejects.toThrow(
+        /ja foi rejeitada.*Pendentes hoje: 3 \(EEB Frei Godofredo \[TESTE\]\)/s,
+      );
+    });
+
+    it('avisa quando nao ha nenhuma pendente', async () => {
+      sugestaoRepo.findOne.mockResolvedValue({ ...sugestaoPendente, status: 'approved' });
+      sugestaoRepo.find.mockResolvedValue([]);
+
+      await expect(service.aprovarSugestaoEscola(1, [2])).rejects.toThrow(
+        /Nao ha nenhuma sugestao pendente/,
+      );
     });
 
     it('recusa rejeitar sem motivo — o aluno le esse texto', async () => {
