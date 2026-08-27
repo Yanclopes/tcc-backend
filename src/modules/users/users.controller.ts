@@ -27,6 +27,7 @@ import { SetRoleDto } from './dto/set-role.dto';
 import { UserDataExportDto } from './dto/user-data-export.dto';
 import { AppUser } from './entities/app-user.entity';
 import { UsersService } from './users.service';
+import { PRIVACY_VERSION_ATUAL } from './privacy-version';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -53,7 +54,7 @@ export class UsersController {
       'O historico anterior e preservado. Auditado como user.consent_reaccepted.',
   })
   async acceptConsent(@CurrentUser() user: JwtUser): Promise<{ consentVersion: string }> {
-    const currentConsentVersion = process.env.PRIVACY_VERSION ?? '2026-01-v1';
+    const currentConsentVersion = PRIVACY_VERSION_ATUAL;
     await this.usersService.acceptConsent(user.userId, currentConsentVersion);
     await this.audit.record({
       actorUserId: user.userId,
