@@ -10,7 +10,6 @@ import { MetricsModule } from './common/metrics/metrics.module';
 import configuration, { DatabaseConfig } from './config/configuration';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { ChatModule } from './modules/chat/chat.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GameModule } from './modules/game/game.module';
 import { GeoModule } from './modules/geo/geo.module';
@@ -97,7 +96,6 @@ import { UsersModule } from './modules/users/users.module';
     RankingModule,
     AnalyticsModule,
     DashboardModule,
-    ChatModule,
     HealthModule,
   ],
   providers: [

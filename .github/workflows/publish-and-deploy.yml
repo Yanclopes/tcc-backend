@@ -106,11 +106,6 @@ jobs:
           done
           docker compose -f docker-compose.prod.yml exec -T api npm run migration:run:prod
           docker compose -f docker-compose.prod.yml exec -T api npm run seed:prod
-          # Base de conhecimento do assistente de IA. Idempotente por hash: so
-          # reindexa (e so gasta embedding) o que mudou. Sem OPENAI_API_KEY no
-          # .env do servidor o comando falha, entao nao derruba o deploy.
-          docker compose -f docker-compose.prod.yml exec -T api npm run chat:indexar:prod || \
-            echo "AVISO: indexacao do chat falhou (OPENAI_API_KEY ausente?); o restante do deploy seguiu."
           docker image prune -f
           '
           DEPLOY_SCRIPT

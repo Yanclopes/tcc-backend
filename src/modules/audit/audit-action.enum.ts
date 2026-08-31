@@ -16,7 +16,4 @@ export enum AuditAction {
   USER_SCHOOL_UPDATED = 'user.school_updated',
   QUESTION_ACTIVATED = 'question.activated',
   QUESTION_DEACTIVATED = 'question.deactivated',
-  // Chat com IA: cada pergunta e registrada porque o conteudo sai da
-  // aplicacao para um provedor externo (transferencia internacional).
-  CHAT_PERGUNTA_ENVIADA = 'chat.pergunta_enviada',
 }

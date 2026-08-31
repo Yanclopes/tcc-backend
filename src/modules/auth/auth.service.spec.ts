@@ -9,7 +9,6 @@ import { SchoolsService } from '../schools/schools.service';
 import { UserConsent } from '../users/entities/user-consent.entity';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import { PRIVACY_VERSION_ATUAL } from '../users/privacy-version';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -76,9 +75,7 @@ describe('AuthService', () => {
         needsSchoolReregistration: false,
         schoolRejectionReason: null,
         needsConsentReacceptance: true,
-        // Referencia a fonte unica, e nao um literal: fixar a versao aqui faria
-        // este teste quebrar a cada revisao da politica, sem nada de errado.
-        currentConsentVersion: PRIVACY_VERSION_ATUAL,
+        currentConsentVersion: '2026-01-v1',
       });
     });
 

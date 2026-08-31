@@ -16,7 +16,6 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './jwt.strategy';
-import { PRIVACY_VERSION_ATUAL } from '../users/privacy-version';
 
 // Bloqueio por e-mail apos N tentativas erradas.
 // Complementa o rate limit por IP (que ja existe): a partir daqui, um atacante
@@ -124,7 +123,7 @@ export class AuthService {
   private async buildAuthResponse(user: AppUser): Promise<AuthResponseDto> {
     const role = user.role?.name ?? DEFAULT_ROLE;
     const payload: JwtPayload = { sub: user.id, email: user.email, role };
-    const currentConsentVersion = PRIVACY_VERSION_ATUAL;
+    const currentConsentVersion = process.env.PRIVACY_VERSION ?? '2026-01-v1';
     const lastConsent = await this.consentRepository.findOne({
       where: { user: { id: user.id } },
       order: { grantedAt: 'DESC' },

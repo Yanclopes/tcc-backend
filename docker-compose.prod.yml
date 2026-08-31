@@ -9,10 +9,7 @@
 
 services:
   postgres:
-    # Ver nota em docker-compose.yml e o procedimento de migracao de volume
-    # em tcc-docs/specs/06-chat-ia.md — trocar a imagem sobre o volume existente
-    # corrompe silenciosamente os indices de texto.
-    image: pgvector/pgvector:pg16
+    image: postgres:16-alpine
     container_name: ods_postgres
     restart: unless-stopped
     environment:
