@@ -69,14 +69,20 @@ describe('CloudflareThrottlerGuard', () => {
 
     it('mantem o mesmo balde para o mesmo token vindo de IPs diferentes', async () => {
       const g = guard();
-      const a = await g.getTracker(req({ 'cf-connecting-ip': '189.4.5.6', authorization: bearer('zzz') }));
-      const b = await g.getTracker(req({ 'cf-connecting-ip': '200.1.2.3', authorization: bearer('zzz') }));
+      const a = await g.getTracker(
+        req({ 'cf-connecting-ip': '189.4.5.6', authorization: bearer('zzz') }),
+      );
+      const b = await g.getTracker(
+        req({ 'cf-connecting-ip': '200.1.2.3', authorization: bearer('zzz') }),
+      );
 
       expect(a).toBe(b);
     });
 
     it('nao expoe material do token na chave', async () => {
-      const tracker = await guard().getTracker(req({ authorization: bearer('assinatura-secreta') }));
+      const tracker = await guard().getTracker(
+        req({ authorization: bearer('assinatura-secreta') }),
+      );
 
       expect(tracker).not.toContain('assinatura-secreta');
       expect(tracker).toMatch(/^tok:[0-9a-f]{32}$/);
@@ -87,7 +93,9 @@ describe('CloudflareThrottlerGuard', () => {
       // limite por IP do que inventar um balde novo a cada requisicao torta.
       const g = guard();
 
-      expect(await g.getTracker(req({ authorization: 'Bearer solto' }, '1.2.3.4'))).toBe('ip:1.2.3.4');
+      expect(await g.getTracker(req({ authorization: 'Bearer solto' }, '1.2.3.4'))).toBe(
+        'ip:1.2.3.4',
+      );
       expect(await g.getTracker(req({ authorization: 'Basic abc' }, '1.2.3.4'))).toBe('ip:1.2.3.4');
     });
   });
