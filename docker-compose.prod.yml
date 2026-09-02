@@ -1,5 +1,15 @@
 # =====================================================================
 # Compose de PRODUCAO — usado no EC2. Nao builda a imagem: puxa do GHCR.
+#
+# LIMITES DE MEMORIA: a instancia e uma t3.micro com 914 MB utilizaveis. Sem
+# `mem_limit` nenhum conteiner tem teto, e um vazamento em qualquer um deles faz
+# o kernel escolher a vitima do OOM killer — que pode ser o Postgres, derrubando
+# o banco por causa de um problema na aplicacao. Os tetos abaixo somam 776 MB e
+# existem como guarda-corpo, nao como ponto de operacao: em regime normal os
+# quatro conteineres juntos ficam perto de 200 MB.
+#
+# Os tetos so funcionam como degradacao suave porque a instancia tem swap (o
+# user-data cria 2 GB). Sem swap, atingir o teto e morte imediata do processo.
 # A imagem e publicada pelo GitHub Actions (workflow publish-and-deploy.yml).
 #
 # Uso:
@@ -9,6 +19,7 @@
 
 services:
   postgres:
+    mem_limit: 256m  # shared_buffers padrao e 128 MB; o resto e cache e conexoes
     image: postgres:16-alpine
     container_name: ods_postgres
     restart: unless-stopped
@@ -27,6 +38,7 @@ services:
       - ods_net
 
   redis:
+    mem_limit: 64m  # guarda so estado de partida; opera perto de 5 MB
     image: redis:7-alpine
     container_name: ods_redis
     restart: unless-stopped
@@ -42,6 +54,7 @@ services:
       - ods_net
 
   api:
+    mem_limit: 360m  # ver NODE_OPTIONS abaixo — o heap do V8 para antes do teto
     image: ghcr.io/yanclopes/tcc-backend:master
     container_name: ods_api
     restart: unless-stopped
@@ -55,6 +68,10 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      # Teto do heap do V8 abaixo do mem_limit do conteiner (360m). Sem isto o
+      # V8 dimensiona o heap pela memoria da MAQUINA, ignora o limite do cgroup e
+      # e morto pelo OOM killer antes de rodar uma coleta completa.
+      NODE_OPTIONS: --max-old-space-size=288
       DB_HOST: postgres
       DB_PORT: 5432
       REDIS_HOST: redis
@@ -69,6 +86,7 @@ services:
   # empurra para o Prometheus hospedado no Grafana Cloud via remote_write.
   # Nao expoe nada publicamente — comunicacao com o api e via rede interna.
   alloy:
+    mem_limit: 96m  # buffer de remote_write; opera perto de 80 MB
     image: grafana/alloy:latest
     container_name: ods_alloy
     restart: unless-stopped
