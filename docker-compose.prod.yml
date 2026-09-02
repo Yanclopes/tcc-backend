@@ -8,6 +8,10 @@
 # existem como guarda-corpo, nao como ponto de operacao: em regime normal os
 # quatro conteineres juntos ficam perto de 200 MB.
 #
+# Cada teto e no minimo o DOBRO do uso observado em regime. Um teto colado no
+# uso normal nao protege de nada: so antecipa a morte do processo no primeiro
+# pico legitimo.
+#
 # Os tetos so funcionam como degradacao suave porque a instancia tem swap (o
 # user-data cria 2 GB). Sem swap, atingir o teto e morte imediata do processo.
 # A imagem e publicada pelo GitHub Actions (workflow publish-and-deploy.yml).
@@ -86,7 +90,7 @@ services:
   # empurra para o Prometheus hospedado no Grafana Cloud via remote_write.
   # Nao expoe nada publicamente — comunicacao com o api e via rede interna.
   alloy:
-    mem_limit: 96m  # buffer de remote_write; opera perto de 80 MB
+    mem_limit: 160m  # opera perto de 80 MB; 96m deixava so 17 MB de folga
     image: grafana/alloy:latest
     container_name: ods_alloy
     restart: unless-stopped
