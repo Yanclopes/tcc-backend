@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
@@ -8,7 +9,16 @@ import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  // Um unico salto de proxy na frente (Cloudflare). Sem isto, `req.ip` e o
+  // endereco do soquete — o IP de borda da Cloudflare — e nao o do usuario, o
+  // que polui os logs e engana qualquer decisao tomada por IP.
+  //
+  // O valor 1 significa "confie no ultimo salto". Nao usar `true`: isso mandaria
+  // o Express aceitar a ponta esquerda de X-Forwarded-For, que e escrita pelo
+  // cliente e portanto forjavel.
+  app.set('trust proxy', 1);
+
   // Substitui o logger padrao pelo Pino (JSON estruturado; pretty apenas em dev).
   app.useLogger(app.get(Logger));
   const config = app.get(ConfigService);

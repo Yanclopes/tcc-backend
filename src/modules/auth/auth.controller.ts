@@ -13,10 +13,18 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Rate limit rigido para dificultar brute force / cadastro em massa.
-  // Override do bucket 'default' apenas nestes endpoints.
+  // Rate limit mais apertado que o global para dificultar brute force e cadastro
+  // em massa. Override do bucket 'default' apenas nestes endpoints.
+  //
+  // Login e cadastro sao anonimos: nao ha token, entao o balde e por IP (ver
+  // CloudflareThrottlerGuard). E um limite COLETIVO sempre que varios usuarios
+  // saem pelo mesmo IP publico — o caso de um laboratorio de escola atras de
+  // NAT. Por isso 20/min, e nao 5: com 5, uma turma de 50 alunos entrando junto
+  // no inicio da aula recebia 429 em massa, e o sistema parecia fora do ar.
+  // Contra brute force 20/min continua restritivo; a defesa de volume propria
+  // fica na Cloudflare, na frente.
   @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({ summary: 'Cria uma conta e retorna o token de acesso' })
   @ApiResponse({ status: 201, type: AuthResponseDto })
   register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
@@ -24,7 +32,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica com e-mail e senha' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
