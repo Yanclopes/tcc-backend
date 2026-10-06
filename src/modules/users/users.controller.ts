@@ -17,6 +17,7 @@ import { AuditAction } from '../audit/audit-action.enum';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser, JwtUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { versaoVigenteDoTermo } from './privacy-version';
 import { AppRole } from '../auth/role.enum';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -53,7 +54,7 @@ export class UsersController {
       'O historico anterior e preservado. Auditado como user.consent_reaccepted.',
   })
   async acceptConsent(@CurrentUser() user: JwtUser): Promise<{ consentVersion: string }> {
-    const currentConsentVersion = process.env.PRIVACY_VERSION ?? '2026-01-v1';
+    const currentConsentVersion = versaoVigenteDoTermo();
     await this.usersService.acceptConsent(user.userId, currentConsentVersion);
     await this.audit.record({
       actorUserId: user.userId,

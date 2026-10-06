@@ -15,6 +15,7 @@ import { DEFAULT_ROLE } from './role.enum';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { versaoVigenteDoTermo } from '../users/privacy-version';
 import { JwtPayload } from './jwt.strategy';
 
 // Bloqueio por e-mail apos N tentativas erradas.
@@ -54,14 +55,14 @@ export class AuthService {
 
     const user = await this.usersService.create(dto);
 
-    if (dto.consentVersion) {
-      await this.consentRepository.save(
-        this.consentRepository.create({
-          user: { id: user.id } as AppUser,
-          consentVersion: dto.consentVersion,
-        }),
-      );
-    }
+    // O consentimento e a base legal do tratamento: sempre registrado, com a
+    // versao que o participante aceitou. O DTO ja garante que veio preenchido.
+    await this.consentRepository.save(
+      this.consentRepository.create({
+        user: { id: user.id } as AppUser,
+        consentVersion: dto.consentVersion,
+      }),
+    );
 
     // Aluno indicou uma escola inexistente: registra sugestao para o admin.
     if (dto.suggestedSchoolName && dto.suggestedSchoolCityId) {
@@ -123,7 +124,7 @@ export class AuthService {
   private async buildAuthResponse(user: AppUser): Promise<AuthResponseDto> {
     const role = user.role?.name ?? DEFAULT_ROLE;
     const payload: JwtPayload = { sub: user.id, email: user.email, role };
-    const currentConsentVersion = process.env.PRIVACY_VERSION ?? '2026-01-v1';
+    const currentConsentVersion = versaoVigenteDoTermo();
     const lastConsent = await this.consentRepository.findOne({
       where: { user: { id: user.id } },
       order: { grantedAt: 'DESC' },
