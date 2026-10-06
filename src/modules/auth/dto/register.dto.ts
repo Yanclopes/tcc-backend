@@ -1,16 +1,20 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 
 export class RegisterDto extends CreateUserDto {
-  @ApiPropertyOptional({
-    example: '2026-01-v1',
+  // Obrigatorio: o consentimento e a BASE LEGAL declarada no termo (art. 7, I).
+  // Enquanto era opcional, a API aceitava criar conta sem nenhum registro de
+  // aceite — o formulario exigia a caixa marcada, mas qualquer chamada direta
+  // contornava isso, e a conta nascia sem a base legal que a sustenta.
+  @ApiProperty({
+    example: '2026-10-v2',
     description:
-      'Versao do termo de consentimento aceito (LGPD). Se informada, registra o consentimento.',
+      'Versao do termo de consentimento aceito (LGPD). Obrigatoria: sem ela nao ha base legal para o tratamento.',
   })
-  @IsOptional()
   @IsString()
-  consentVersion?: string;
+  @IsNotEmpty()
+  consentVersion!: string;
 
   @ApiPropertyOptional({
     example: 'Escola Municipal Sao Jose',
