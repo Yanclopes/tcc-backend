@@ -10,7 +10,6 @@ import { GameDifficulty } from './entities/game-difficulty.entity';
 import { GameStatus } from './entities/game-status.entity';
 import { Game } from './entities/game.entity';
 import { GameController } from './game.controller';
-import { GameGateway } from './game.gateway';
 import { GameService } from './game.service';
 import { GameSessionService } from './game-session.service';
 
@@ -22,7 +21,7 @@ import { GameSessionService } from './game-session.service';
     AuthModule,
   ],
   controllers: [GameController],
-  providers: [GameService, GameSessionService, GameGateway],
+  providers: [GameService, GameSessionService],
   exports: [GameService],
 })
 export class GameModule {}

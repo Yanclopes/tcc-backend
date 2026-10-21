@@ -53,7 +53,7 @@ async function bootstrap() {
     .setDescription(
       'API da plataforma gamificada para levantamento do conhecimento sobre os ' +
         'Objetivos de Desenvolvimento Sustentavel (ODS). Inclui autenticacao JWT, ' +
-        'catalogo de perguntas por ODS, motor de jogo (REST + WebSocket) e camada analitica.',
+        'catalogo de perguntas por ODS, motor de jogo e camada analitica.',
     )
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')

@@ -20,7 +20,6 @@ updates:
           - "typeorm"
           - "pg"
           - "ioredis"
-          - "socket.io*"
         update-types:
           - minor
           - patch

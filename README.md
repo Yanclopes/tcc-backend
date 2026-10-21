@@ -17,7 +17,6 @@ Alinhada ao referencial teórico do TCC:
 | ORM | **TypeORM** + migrations |
 | Banco relacional | **PostgreSQL 16** |
 | Estado de jogo em tempo real | **Redis** |
-| Tempo real | **WebSocket** (Socket.IO) |
 | Documentação | **Swagger / OpenAPI** |
 | Autenticação | **JWT** (RFC 7519) + bcrypt |
 | Containerização | **Docker** + Docker Compose |
@@ -34,8 +33,8 @@ Organização por módulos de domínio (`src/modules`):
 - **goals** — os 17 ODS.
 - **questions** — perguntas e opções; seleção para o jogo sem revelar a resposta.
 - **powerups** — catálogo de ajudas.
-- **game** — motor do jogo: REST (`GameController`) + WebSocket (`GameGateway`), pontuação
-  (`game-scoring.ts`) e estado efêmero no Redis (`GameSessionService`).
+- **game** — motor do jogo: REST (`GameController`), pontuação (`game-scoring.ts`) e estado
+  efêmero no Redis (`GameSessionService`).
 - **ranking** — placar de pontuação.
 - **analytics** — leitura das *materialized views* e refresh.
 - **health** — verificação de saúde (Postgres + Redis).
@@ -123,22 +122,6 @@ Todos os endpoints exigem JWT (`Authorization: Bearer ...`).
 3. `POST /games/:id/answers` — envia a resposta; retorna acerto, opção correta e pontos.
 4. `POST /games/:id/powerups` — usa `fifty`, `skip` ou `audience`.
 5. `POST /games/:id/finish` — finaliza e grava o ranking.
-
-## Eventos WebSocket
-
-Namespace `/game` (Socket.IO). O handshake exige JWT válido — via `auth.token` do socket.io
-ou header `Authorization: Bearer ...`. Sem token válido, a conexão é encerrada.
-Cada partida usa uma *room* `game:{gameId}`.
-
-| Cliente → Servidor | Payload | Servidor → Cliente |
-| --- | --- | --- |
-| `game:start` | `{ difficultyId, educationLevelId? }` | `game:started` |
-| `game:next` | `{ gameId }` | `game:question` |
-| `game:answer` | `{ gameId, optionId, responseTimeMs? }` | `game:answer:result` |
-| `game:powerup` | `{ gameId, powerup }` | `game:powerup:result` |
-| `game:finish` | `{ gameId }` | `game:finished` |
-
-Erros de domínio são propagados como `WsException`.
 
 ## Pontuação (gamificação)
 
